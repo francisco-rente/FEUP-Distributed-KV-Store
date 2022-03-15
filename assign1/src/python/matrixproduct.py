@@ -86,3 +86,6 @@ def print_matrix(matrix, dim):
                 print(", ", end="")
         print("]")
     print("----------")
+
+
+# How to calculate GigaFloops: 2n³/tempo    -> n: operations
