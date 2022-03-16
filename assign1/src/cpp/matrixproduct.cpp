@@ -4,6 +4,7 @@
 #include <time.h>
 #include <cstdlib>
 #include <papi.h>
+#include <fstream>
 
 using namespace std;
 
@@ -14,7 +15,23 @@ using namespace std;
  */
 #define NUMBER_EVENTS 2
 
+/**
+ * @brief Number of events added to EventSet
+ * 
+ */
 #define STRING_MAX 256
+
+#define BLOCK_START_SIZE 128
+
+#define BLOCK_END_SIZE 512
+
+#define BLOCK_MUL_MIN 4096
+
+#define BLOCK_MUL_MAX 10240
+
+#define BLOCK_MUL_INTERVAL 2048
+
+#define MAX_PATH_SIZE 256
 
 
  /*                     PAPI INTERFACE                                               */
@@ -66,6 +83,9 @@ void stop_papi_counters(int& EventSet, long long* values){
 		std::cout << "FAIL reset" << endl; 
 }
 
+//                        Operations
+
+
 void OnMult(int& EventSet, int m_ar, int m_br, char* st) {
 	long long values[NUMBER_EVENTS];
 	SYSTEMTIME Time1, Time2;
@@ -114,16 +134,6 @@ void OnMult(int& EventSet, int m_ar, int m_br, char* st) {
 	//size, time, L1 DCM, L2 DCM
 	sprintf(st, "%d, %3.3f, %lld, %lld\n",m_ar, operation_time, values[0], values[1] );
 
-	/*
-	// display 10 elements of the result matrix tto verify correctness
-	cout << "Result matrix: " << endl;
-	for(i=0; i<1; i++)
-	{	for(j=0; j<min(10,m_br); j++)
-			cout << phc[j] << " ";
-	}
-	cout << endl;
-	*/
-
     free(pha);
     free(phb);
     free(phc);
@@ -136,23 +146,30 @@ void OnMultRange(int& EventSet, int startSize, int endSize, int interval){
 
 	char* text;
 
+	ofstream outfile;
+   	outfile.open("./data/mul_600_3000.csv");
+
+
+	outfile<<"Size, Time, L1_DCM, L2_DCM"<<endl;
+
 	text = (char*)malloc(STRING_MAX * sizeof(char));
 
 	while(current_size<=endSize){
 		OnMult(EventSet, current_size, current_size, text);
-		cout<< text;
+		outfile<< text;
+		cout<<text;
 		current_size+= interval;
 	}
-
+	outfile.close();
 	free(text);
 }
 
 // add code here for line x line matriz multiplication
-void OnMultLine(int m_ar, int m_br)
+void OnMultLine(int& EventSet,int m_ar, int m_br, char* st)
 {
+	long long values[NUMBER_EVENTS];
     SYSTEMTIME Time1, Time2;
 	
-	char st[100];
 	double temp;
 	int i, j, k;
 
@@ -175,7 +192,7 @@ void OnMultLine(int m_ar, int m_br)
 			phb[i*m_br + j] = (double)(i+1);
 
 
-
+	start_papi_counters(EventSet);
     Time1 = clock();
 
 	for(i=0; i<m_ar; i++)
@@ -190,30 +207,55 @@ void OnMultLine(int m_ar, int m_br)
 	}
 
 
+	stop_papi_counters(EventSet, values);
     Time2 = clock();
-	sprintf(st, "Time: %3.3f seconds\n", (double)(Time2 - Time1) / CLOCKS_PER_SEC);
-	cout << st;
 
-	// display 10 elements of the result matrix tto verify correctness
-	cout << "Result matrix: " << endl;
-	for(i=0; i<1; i++)
-	{	for(j=0; j<min(10,m_br); j++)
-			cout << phc[j] << " ";
-	}
-	cout << endl;
+
+	double operation_time =  (double)(Time2 - Time1) / CLOCKS_PER_SEC;
+	sprintf(st, "%d, %3.3f, %lld, %lld\n",m_ar, operation_time, values[0], values[1] );
+
 
     free(pha);
     free(phb);
     free(phc);
 }
 
+void OnMultLineRange(int& EventSet, int startSize, int endSize, int interval){
+	int current_size = startSize;
+	char filename[MAX_PATH_SIZE];
+
+	sprintf(filename, "./data/mul_line_%d_%d.csv", startSize, endSize);
+
+	ofstream outfile;
+   	outfile.open(filename);
+
+	char* text;
+
+	text = (char*)malloc(STRING_MAX * sizeof(char));
+
+	outfile<<"Size, Time, L1_DCM, L2_DCM\n";
+
+	while(current_size<=endSize){
+		OnMultLine(EventSet, current_size, current_size, text);
+		outfile<<text;
+		cout<< text;
+		current_size+= interval;
+	}
+	
+	outfile.close();
+
+	free(text);
+}
+
+
+
 // add code here for block x block matriz multiplication
-void OnMultBlock(int m_ar, int m_br, int bkSize)
+void OnMultBlock(int& EventSet,int m_ar, int m_br, int bkSize, char* st)
 {
+	long long values[NUMBER_EVENTS];
     
 	SYSTEMTIME Time1, Time2;
 	
-	char st[100];
 	double temp;
 	int i, j, k;
 
@@ -236,7 +278,7 @@ void OnMultBlock(int m_ar, int m_br, int bkSize)
 			phb[i*m_br + j] = (double)(i+1);
 
 
-
+	start_papi_counters(EventSet);
     Time1 = clock();
 
 
@@ -254,25 +296,53 @@ void OnMultBlock(int m_ar, int m_br, int bkSize)
 		}
 	}
 
-
+	stop_papi_counters(EventSet, values);
 	Time2 = clock();
-	sprintf(st, "Time: %3.3f seconds\n", (double)(Time2 - Time1) / CLOCKS_PER_SEC);
-	cout << st;
+	
 
-	// display 10 elements of the result matrix tto verify correctness
-	cout << "Result matrix: " << endl;
-	for(i=0; i<1; i++)
-	{	for(j=0; j<min(10,m_br); j++)
-			cout << phc[j] << " ";
-	}
-	cout << endl;
+	double operation_time =  (double)(Time2 - Time1) / CLOCKS_PER_SEC;
+	sprintf(st, "%d, %d, %3.3f, %lld, %lld\n",m_ar, bkSize, operation_time, values[0], values[1] );
 
     free(pha);
     free(phb);
     free(phc);
 }
 
+void OnMultBlockRange(int& EventSet, int startSize, int endSize, int interval){
+	int current_size = startSize;
+	int current_block_size = BLOCK_START_SIZE;
 
+	char filename[MAX_PATH_SIZE];
+
+	sprintf(filename, "./data/mul_block_%d_%d.csv", startSize, endSize);
+
+	ofstream outfile;
+   	outfile.open(filename);
+
+	char* text;
+
+	text = (char*)malloc(STRING_MAX * sizeof(char));
+	cout<<"Size, Block_Size, Time, L1_DCM, L2_DCM\n";
+
+	while(current_size<=endSize){
+		while(current_block_size <= BLOCK_END_SIZE)
+		{
+			OnMultBlock(EventSet, current_size, current_size, current_block_size, text);
+			cout<< text;
+			outfile<<text;
+			current_block_size*=2;
+			
+		}
+		current_size+= interval;
+		current_block_size = BLOCK_START_SIZE;
+		
+	}
+	outfile.close();
+	free(text);
+}
+
+
+//                          Main
 
 
 int main (int argc, char *argv[])
@@ -327,7 +397,7 @@ int main (int argc, char *argv[])
 			cout<< endl;
 			text = (char*)malloc(STRING_MAX * sizeof(char));
 		}
-		else{
+		else if(op != 6){
 			printf("Start size for matrix: ");
 			cin >> startSize;
 			printf("End Size for matrix: ");
@@ -339,30 +409,39 @@ int main (int argc, char *argv[])
 
 		switch (op){
 			case 1: 
+				cout<<"Size, Time, L1_DCM, L2_DCM\n";
 				OnMult(EventSet, lin, col, text);
 				cout<<text<<endl;
+				free(text);
 				break;
 			case 2: 
 				OnMultRange(EventSet, startSize, endSize, interval);
 				break;
 			case 3: 
-				//OnMult(lin, col);
+				cout<<"Size, Time, L1_DCM, L2_DCM\n";
+				OnMultLine(EventSet,lin, col, text);
+				cout<<text<<endl;
+				free(text);
 				break;
 			case 4:
-				OnMultLine(lin, col);  
+				OnMultLineRange(EventSet, startSize, endSize, interval);  
 				break;
 			case 5:
 				cout << "Block Size? ";
 				cin >> blockSize;
-				OnMultBlock(lin, col, blockSize);  
+
+				cout<<"Size, Block_Size, Time, L1_DCM, L2_DCM\n";
+				OnMultBlock(EventSet, lin, col, blockSize, text);  
+				cout<<text<<endl;
+				free(text);
 				break;
 			case 6:
-				//onMultiBlock()
+				OnMultBlockRange(EventSet, BLOCK_MUL_MIN, BLOCK_MUL_MAX,  BLOCK_MUL_INTERVAL);
 				break;
 
 		}
 
-		free(text);
+
 
 
 	}while (op != 0);
