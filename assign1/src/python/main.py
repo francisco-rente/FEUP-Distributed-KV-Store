@@ -1,4 +1,5 @@
 import sys 
+import output
 from matrixproduct import * 
 
 # Usage 
@@ -23,24 +24,16 @@ def main(option, dim, block):
         OnMult(m_a, m_b, dim, dim)
     elif (option == 2): 
         OnMultLine(m_a, m_b, dim, dim)
-        #print_matrix(OnMultLine(m_a, m_b, dim, dim), dim)
     else: 
         if(block != -1):
             OnMultBlock(m_a, m_b, dim, dim, block)
-            #print_matrix(OnMultBlock(m_a, m_b, dim, dim, block), dim)
         else:
             raise Exception("Invalid block size")
-       
-
-
-
 
 if __name__ == "__main__": 
-    if(len(sys.argv)> 5): 
+    if(len(sys.argv)> 4): 
         raise Exception("Invalid command")
 
     block = int(sys.argv[3]) if (len(sys.argv) == 4) else -1
-    floating = True if (len(sys.argv) > 4 and sys.argv[4] == 1) else False
-
 
     main(int(sys.argv[1]), int(sys.argv[2]), block)

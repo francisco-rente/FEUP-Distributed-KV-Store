@@ -1,4 +1,9 @@
 from time import perf_counter, perf_counter_ns
+from output import output_to_file
+
+
+def gflops(size, time): 
+    return 2 * (size)**3 / time
 
 
 def generate_matrixA(m_ar):
@@ -29,7 +34,11 @@ def OnMult(m_a, m_b, m_ar, m_br):
 
     end = perf_counter()
 
-    print("time elapsed ", end - start, "ns ")
+    time = end - start
+
+    print("time elapsed ", time, "s", "GFLOPS: ", gflops(m_ar, time))
+
+    output_to_file(1, m_ar, time)
 
     return matrixC
 
@@ -47,7 +56,11 @@ def OnMultLine(m_a, m_b, m_ar, m_br):
 
     end = perf_counter()
 
-    print("time elapsed ", end - start, "ns ")
+    time = end - start
+
+    print("time elapsed ", time, "s", "GFLOPS: ", gflops(m_ar, time))
+
+    output_to_file(2, m_ar, time)
 
     return matrixC
 
@@ -73,7 +86,12 @@ def OnMultBlock(m_a, m_b, m_ar, m_br, blkSize):
 
     end = perf_counter()
 
-    print("time elapsed ", end - start, "ns ", end="\n")
+    time = end - start
+
+    print("time elapsed: ", time, "s ", "GFLOPS: ", gflops(m_ar, time))
+
+    output_to_file(3, m_ar, time, blkSize)
+
     return matrixC
 
 
@@ -88,4 +106,4 @@ def print_matrix(matrix, dim):
     print("----------")
 
 
-# How to calculate GigaFloops: 2n³/tempo    -> n: operations
+# How to calculate GigaFloops: 2n³/tempo    -> n: operatios
