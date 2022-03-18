@@ -26,34 +26,34 @@ mkdir $DIR
 touch $DIR/$FILE1  $DIR/$FILE2  $DIR/$FILE3
 
 
-# # 1 
-# for MATRIX_DIM in {600..3000..400}
-# do
-#       if [ $MEAN -eq 1 ]
-#         then
-#             for TIME in {1..3}
-#             do  
-#                 python ./main.py $OPTION_1 $MATRIX_DIM 
-#             done 
-#       else 
-#         python ./main.py $OPTION_1 $MATRIX_DIM   
-#       fi   
-# done 
+# 1 
+for MATRIX_DIM in {600..3000..400}
+do
+      if [ $MEAN -eq 1 ]
+        then
+            for TIME in {1..3}
+            do  
+                python ./main.py $OPTION_1 $MATRIX_DIM 
+            done 
+      else 
+        python ./main.py $OPTION_1 $MATRIX_DIM   
+      fi   
+done 
 
 
-# # # 2
-# for MATRIX_DIM in {600..3000..400}
-# do
-#       if [ $MEAN -eq 1 ]
-#         then
-#             for TIME in {1..3}
-#             do  
-#                 python ./main.py $OPTION_2 $MATRIX_DIM 
-#             done 
-#       else 
-#         python ./main.py $OPTION_2 $MATRIX_DIM   
-#       fi   
-# done 
+# # 2
+for MATRIX_DIM in {600..3000..400}
+do
+      if [ $MEAN -eq 1 ]
+        then
+            for TIME in {1..3}
+            do  
+                python ./main.py $OPTION_2 $MATRIX_DIM 
+            done 
+      else 
+        python ./main.py $OPTION_2 $MATRIX_DIM   
+      fi   
+done 
 
 
 # # 3 
@@ -68,6 +68,7 @@ do
                 python ./main.py $OPTION_3 $MATRIX_DIM $BLK
             done
         else 
+            echo $MATRIX_DIM
             python ./main.py $OPTION_3 $MATRIX_DIM $BLK
         fi 
     done 
