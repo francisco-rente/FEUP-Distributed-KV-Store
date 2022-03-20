@@ -61,7 +61,7 @@ def OnMultLine(m_a, m_b, m_ar, m_br):
     print("time elapsed ", time, "s", "GFLOPS: ", gflops(m_ar, time))
 
     output_to_file(2, m_ar, time)
-
+    print_matrix(matrixC, m_ar)
     return matrixC
 
 
@@ -77,8 +77,8 @@ def OnMultBlock(m_a, m_b, m_ar, m_br, blkSize):
 
 
     for ii in range(0, m_ar, blkSize): 
-        for jj in range(0, m_br, blkSize): 
-            for kk in range(0, m_br, blkSize): 
+        for kk in range(0, m_br, blkSize): 
+            for jj in range(0, m_br, blkSize): 
                 for i in range(ii, ii + blkSize): 
                     for k in range(kk, kk + blkSize):
                         for j in range(jj, jj + blkSize):  
@@ -91,7 +91,8 @@ def OnMultBlock(m_a, m_b, m_ar, m_br, blkSize):
     print("time elapsed: ", time, "s ", "GFLOPS: ", gflops(m_ar, time))
 
     output_to_file(3, m_ar, time, blkSize)
-
+    print_matrix(matrixC, m_ar)
+    
     return matrixC
 
 
