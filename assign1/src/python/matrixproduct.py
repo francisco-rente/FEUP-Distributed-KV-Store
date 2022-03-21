@@ -7,7 +7,7 @@ def gflops(size, time):
 
 
 def generate_matrixA(m_ar):
-    return [1 for x in range(0, m_ar ** 2)]
+    return [1.0 for x in range(0, m_ar ** 2)]
 
 
 def generate_matrixB(m_br):
@@ -15,7 +15,7 @@ def generate_matrixB(m_br):
 
     for i in range(0, m_br):
         for j in range(0, m_br):
-            matrixB[i*m_br + j] = (i+1)
+            matrixB[i*m_br + j] = (i+1.0)
 
     return matrixB
 
@@ -29,7 +29,7 @@ def OnMult(m_a, m_b, m_ar, m_br):
         for j in range(0, m_br):
             temp = 0
             for k in range(0, m_ar):
-                temp += m_a[i * m_ar + k] * m_b[k * m_br + j]
+                temp += m_a[i * m_ar + k] * m_b[k * m_br + j] 
             matrixC[i * m_ar + j] = temp
 
     end = perf_counter()
