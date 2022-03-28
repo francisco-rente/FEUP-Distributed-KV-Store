@@ -50,7 +50,6 @@ def OnMultLine(m_a, m_b, m_ar, m_br):
 
     for i in range(0, m_ar):
         for k in range(0, m_ar):
-            temp = 0
             for j in range(0, m_br):
                 matrixC[i*m_ar+j] += m_a[i*m_ar+k] * m_b[k*m_br+j]
 
