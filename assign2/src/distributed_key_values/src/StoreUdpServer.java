@@ -13,8 +13,7 @@ public class StoreUdpServer implements Runnable {
         this.store = store;
         this.clusterIp = clusterIp;
         this.clusterPort = clusterPort;
-
-        
+      
     }
 
 

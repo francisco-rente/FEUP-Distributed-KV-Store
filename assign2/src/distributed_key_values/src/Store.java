@@ -59,11 +59,11 @@ public class Store {
         return folderLocation;
     }
 
-    public String getId() {
+    public String getStoreIp() {
         return storeIp;
     }
 
-    public Integer getStore_port() {
+    public Integer getStorePort() {
         return storePort;
     }
 
@@ -101,6 +101,21 @@ public class Store {
     public Integer getCluster_port() {
         return clusterPort;
     }
+
+
+    public String get(String filekey) {
+
+        // read file content using Scanner
+        Scanner scanner = new Scanner(new File(this.folderLocation + "/" + fileName));
+        String bodyString = "";
+        while (scanner.hasNextLine()) {
+            bodyString += scanner.nextLine();
+        }
+        scanner.close();
+
+        return bodyString;
+    }
+
 
     public static void main(String[] args) {
         if(args.length!=4 ){

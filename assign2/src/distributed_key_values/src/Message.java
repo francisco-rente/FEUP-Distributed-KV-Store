@@ -7,6 +7,27 @@ public class Message{
     private String body;
     
 
+
+    public boolean isTestClient() {
+        return isTestClient;
+    }
+
+    public String getOperation() {
+        return operation;
+    }
+
+    public String getIp() {
+        return ip;
+    }
+
+    public int getPort() {
+        return port;
+    }
+
+    public String getBody() {
+        return body;
+    }
+
     public Message(String operation, boolean isTestClient, String ip, int port, String body){
         this.operation = operation;
         this.isTestClient = isTestClient;
