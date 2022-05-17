@@ -1,0 +1,54 @@
+public class Message{
+
+    private String operation;
+    private boolean isTestClient;
+    private String ip; 
+    private int port;
+    private String body;
+    
+
+    public Message(String operation, boolean isTestClient, String ip, int port, String body){
+        this.operation = operation;
+        this.isTestClient = isTestClient;
+        this.ip = ip;
+        this.port = port;
+        this.body = body;
+    }
+
+    public Message(){
+        this.operation = "";
+        this.isTestClient = false;
+        this.ip = "";
+        this.port = 0;
+        this.body = "";
+    }
+
+    @Override
+    public String toString(){
+        String header = this.operation + " " + this.isTestClient + " " + this.ip + ":" + this.port + "\n\n"; 
+        
+        String body = "body:\n " + this.body;
+
+        return header + body;
+    }
+
+    public static Message toObject(String message){
+        //create a Message object from the string
+        String[] messageSplit = message.split("body:");
+        String header = messageSplit[0];
+        String body = messageSplit[1];
+        // split header
+        String[] headerSplit = header.split(" ");
+        String operation = headerSplit[0];
+        String isTestClient = headerSplit[1];
+        String ipPort = headerSplit[2];
+        String[] ipPortSplit = ipPort.split(":");
+        String ip = ipPortSplit[0];
+        int port = Integer.parseInt(ipPortSplit[1]);
+        // create a Message object
+        Message messageObj = new Message(operation, Boolean.parseBoolean(isTestClient), ip, port, body);
+        return messageObj;
+    }
+    
+
+}
