@@ -7,7 +7,6 @@ import java.net.InetAddress;
 
 
 
-
 public class Store {
 
     private final String STARTING_MEMBERSHIP_COUNTER = "0";
@@ -31,29 +30,27 @@ public class Store {
     
 
 
-    public Store(String id, Integer storePort, String clusterIp, Integer clusterPort) throws IOException {
-        this.storeIp = id;
+    public Store(String storeIp, Integer storePort, String clusterIp, Integer clusterPort) {
+        this.storeIp = storeIp;
         this.storePort = storePort;
         this.clusterIp = clusterIp;
         this.clusterPort = clusterPort;
-        this.folderLocation = "../node_db/" + id; 
+        this.folderLocation = "../node_db/" + storeIp; 
         this.membershipLog = this.folderLocation + "membership_log.txt"; 
 
         this.udpClusterServer = new StoreUdpServer(this, clusterIp, clusterPort);
 
         this.cluster = new ArrayList<ArrayList<String>>(); 
 
+        System.out.println("Creating TCP server");
         this.tcpConnectionServer = new StoreTcpServer(this, this.storeIp, storePort); 
 
+        Thread tcpServer = new Thread(this.tcpConnectionServer);
+        tcpServer.start();
 
-
-        try {
-            File file = new File(this.folderLocation);
-            boolean flag = file.mkdir();  
-        } catch (Exception e) {
-            //TODO: handle exception
-        }
-          
+       
+        File file = new File(this.folderLocation);
+        boolean flag = file.mkdir();            
 
     }   
 
@@ -105,5 +102,25 @@ public class Store {
         return clusterPort;
     }
 
+    public static void main(String[] args) {
+        if(args.length!=4 ){
+            System.out.println("Error in number of arguments. Please write something like this on temrinal:\n Store clusterIp clusterPort storeIp storePort");
+            return;
+        }
+        
+        // read arguments and create Store object
+        String storeIp = args[2];
+        Integer storePort = Integer.parseInt(args[3]);
+        String clusterIp = args[0];
+        Integer clusterPort = Integer.parseInt(args[1]);
+        // create Store object
+        
+        Store store = new Store(storeIp, storePort, clusterIp, clusterPort);
+
+        while(true){
+        
+        }
+        
+    }
 
 }
