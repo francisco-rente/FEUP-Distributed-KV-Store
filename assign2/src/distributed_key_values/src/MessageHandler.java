@@ -1,6 +1,8 @@
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.PrintWriter;
 import java.io.IOException;
 import java.net.Socket;
 
@@ -13,7 +15,6 @@ public class MessageHandler implements Runnable {
         this.store = store;
         this.socket = socket;
     }
-
 
     public void handleGetOperation(Message message) {
         // body has key
@@ -42,14 +43,14 @@ public class MessageHandler implements Runnable {
     }
 
     public void handlePutOperation(Message message) {
-        // get key value pair from body  
+        // get key value pair from body
         // ArrayList<String> keyValuePair = message.getBody(PUT_BODY);
 
-        // put api call 
+        // put api call
     }
 
     public void handleDeleteOperation(Message message) {
-        
+
     }
 
     public void handleJoinOperation(Message message) {
@@ -59,9 +60,6 @@ public class MessageHandler implements Runnable {
     public void handleLeaveOperation(Message message) {
 
     }
-
-
-
 
     @Override
     public void run() {
@@ -81,35 +79,31 @@ public class MessageHandler implements Runnable {
             this.message = Message.toObject(messageString);
 
             MessageType type = MessageType.getMessageType(message, this.store);
-
+            System.out.println(message);
             // TODO discover header type
-
             switch (type) {
                 case GET:
-                    this.handleGetOperation();
+                    this.handleGetOperation(this.message);
                     break;
                 case PUT:
-                    this.handlePutOperation();
+                    this.handlePutOperation(this.message);
                     break;
                 case DELETE:
-                    this.handleDeleteOperation();
+                    this.handleDeleteOperation(this.message);
                     break;
                 case JOIN:
-                    this.handleJoinOperation();
+                    this.handleJoinOperation(this.message);
                     break;
                 case LEAVE:
-                    this.handleLeaveOperation();
+                    this.handleLeaveOperation(this.message);
                     break;
                 case UNKNOWN:
                     break;
 
-            
-            System.out.println(message);
+            }
 
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
-}
-
 }

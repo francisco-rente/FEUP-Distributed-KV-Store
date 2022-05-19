@@ -1,4 +1,5 @@
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.DatagramSocket;
 import java.net.ServerSocket;
@@ -106,14 +107,20 @@ public class Store {
     public String get(String filekey) {
 
         // read file content using Scanner
-        Scanner scanner = new Scanner(new File(this.folderLocation + "/" + fileName));
-        String bodyString = "";
-        while (scanner.hasNextLine()) {
-            bodyString += scanner.nextLine();
-        }
+        Scanner scanner;
+        try {
+            scanner = new Scanner(new File(this.folderLocation + "/" + filekey));
+            String bodyString = "";
+            while (scanner.hasNextLine()) {
+                bodyString += scanner.nextLine();
+            }
         scanner.close();
-
         return bodyString;
+        } catch (FileNotFoundException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+            return "ERROR";
+        }
     }
 
 
