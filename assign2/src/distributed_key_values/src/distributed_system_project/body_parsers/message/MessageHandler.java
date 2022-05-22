@@ -1,3 +1,11 @@
+package distributed_system_project.body_parsers.message;
+
+import distributed_system_project.body_parsers.message.body_parsers.DeleteMessageBodyParser;
+import distributed_system_project.body_parsers.message.body_parsers.GetMessageBodyParser;
+import distributed_system_project.body_parsers.utilities.Pair;
+import distributed_system_project.body_parsers.Store;
+import distributed_system_project.body_parsers.message.body_parsers.PutMessageBodyParser;
+
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -17,20 +25,46 @@ public class MessageHandler implements Runnable {
     }
 
     public void handleGetOperation(Message message) {
-        // body has key
-        String key = message.getBody();
+        GetMessageBodyParser body_parser = new GetMessageBodyParser(message.getBody());
 
-        // obtain value from store
+        String key = body_parser.parse();
+
+        // obtain value from store or from other nodes
         String value = this.store.get(key);
 
-        Message response;
-        if (value != null) {
-            response = new Message("get", false, message.getIp(), message.getPort(), value);
-        } else {
-            response = new Message("get", false, message.getIp(), message.getPort(), "ERROR: File not found");
-        }
+        Message response = new Message("get", false, message.getIp(), message.getPort(),
+                (value == null) ? "ERROR: File not found" : value);
 
-        // create output stream
+        sendMessageToSocket(response);
+    }
+
+    public void handlePutOperation(Message message) {
+        PutMessageBodyParser putMessageBodyParser = new PutMessageBodyParser(message.getBody());
+        Pair<String, String> keyValuePair = putMessageBodyParser.parse();
+
+        // store the value in the store or in other nodes (if the key is adequate)
+        String status = this.store.put(keyValuePair.getElement0(), keyValuePair.getElement1());
+
+        Message response = new Message("put", false, message.getIp(), message.getPort(),
+                status == null ? "ERROR: File not found" : status);
+
+        sendMessageToSocket(response);
+    }
+
+    public void handleDeleteOperation(Message message) {
+        DeleteMessageBodyParser deleteMessageBodyParser = new DeleteMessageBodyParser(message.getBody());
+        String key = deleteMessageBodyParser.parse();
+
+        // tombstone the value in the store or in other nodes
+        String status = this.store.delete(key);
+
+        Message response = new Message("delete", false, message.getIp(),
+                message.getPort(), status == null ? "ERROR: PUT OPERATION UNSUCCESSFUL" : status);
+
+        sendMessageToSocket(response);
+    }
+
+    private void sendMessageToSocket(Message response) {
         OutputStream outputStream;
         try {
             outputStream = this.socket.getOutputStream();
@@ -40,17 +74,6 @@ public class MessageHandler implements Runnable {
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
-    }
-
-    public void handlePutOperation(Message message) {
-        // get key value pair from body
-        // ArrayList<String> keyValuePair = message.getBody(PUT_BODY);
-
-        // put api call
-    }
-
-    public void handleDeleteOperation(Message message) {
-
     }
 
     public void handleJoinOperation(Message message) {
@@ -67,16 +90,16 @@ public class MessageHandler implements Runnable {
         try {
             InputStream input = this.socket.getInputStream();
             BufferedReader reader = new BufferedReader(new InputStreamReader(input));
-            String messageString = "";
+            StringBuilder messageString = new StringBuilder();
 
             // read until the end of the stream
-            String line = "";
+            String line;
             while ((line = reader.readLine()) != null) {
                 // concat the line to the message
-                messageString += line;
+                messageString.append(line);
             }
 
-            this.message = Message.toObject(messageString);
+            this.message = Message.toObject(messageString.toString());
 
             MessageType type = MessageType.getMessageType(message, this.store);
             System.out.println(message);
