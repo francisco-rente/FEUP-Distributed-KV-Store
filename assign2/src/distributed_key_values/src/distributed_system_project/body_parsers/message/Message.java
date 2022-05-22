@@ -1,10 +1,12 @@
+package distributed_system_project.body_parsers.message;
+
 public class Message{
 
-    private String operation;
-    private boolean isTestClient;
-    private String ip; 
-    private int port;
-    private String body;
+    private final String operation;
+    private final boolean isTestClient;
+    private final String ip;
+    private final int port;
+    private final String body;
     
 
 
@@ -54,7 +56,7 @@ public class Message{
     }
 
     public static Message toObject(String message){
-        //create a Message object from the string
+        //create a distributed_system_project.body_parsers.message.Message object from the string
         String[] messageSplit = message.split("body:");
         String header = messageSplit[0];
         String body = messageSplit[1];
@@ -66,10 +68,8 @@ public class Message{
         String[] ipPortSplit = ipPort.split(":");
         String ip = ipPortSplit[0];
         int port = Integer.parseInt(ipPortSplit[1]);
-        // create a Message object
-        Message messageObj = new Message(operation, Boolean.parseBoolean(isTestClient), ip, port, body);
-        return messageObj;
+        // create a distributed_system_project.body_parsers.message.Message object
+        return new Message(operation, Boolean.parseBoolean(isTestClient), ip, port, body);
     }
-    
 
 }

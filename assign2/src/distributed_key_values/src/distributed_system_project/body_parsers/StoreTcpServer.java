@@ -1,13 +1,12 @@
+package distributed_system_project.body_parsers;
+
+import distributed_system_project.body_parsers.message.MessageHandler;
+
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.io.IOException;
-import java.net.ServerSocket;
 import java.net.UnknownHostException;
 import java.net.Socket;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.BufferedReader;
-import java.io.PrintWriter;
 
 public class StoreTcpServer implements Runnable {
 
@@ -38,11 +37,11 @@ public class StoreTcpServer implements Runnable {
 
                 messageHandler.run();
 
-                System.out.println("Received Message");
+                System.out.println("Received distributed_system_project.body_parsers.message.Message");
             }
         
         } catch (UnknownHostException e) {
-            // TODO Auto-generated catch blocke
+            // TODO Auto-generated catch blocked
             e.printStackTrace();
         } catch (IOException e) {
             // TODO Auto-generated catch block
@@ -53,7 +52,7 @@ public class StoreTcpServer implements Runnable {
 
     }
 
-    public void closeServer(ServerSocket server) throws IOException {
+    public void closeServer(ServerSocket server) {
         try {
             this.tcpServerSocket.close();
         } catch (IOException e) {

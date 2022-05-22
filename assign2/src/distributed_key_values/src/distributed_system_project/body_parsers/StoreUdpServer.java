@@ -1,3 +1,5 @@
+package distributed_system_project.body_parsers;
+
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
@@ -28,7 +30,7 @@ public class StoreUdpServer implements Runnable {
 
 
         } catch (UnknownHostException e) {
-            // TODO Auto-generated catch blocke
+            // TODO Auto-generated catch blocked
             e.printStackTrace();
         } catch (SocketException e) {
             // TODO Auto-generated catch block
