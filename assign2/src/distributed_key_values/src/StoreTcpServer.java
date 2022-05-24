@@ -42,14 +42,12 @@ public class StoreTcpServer implements Runnable {
             }
         
         } catch (UnknownHostException e) {
-            // TODO Auto-generated catch blocke
+            // TODO Auto-generated catch block
             e.printStackTrace();
         } catch (IOException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
-
-  
 
     }
 

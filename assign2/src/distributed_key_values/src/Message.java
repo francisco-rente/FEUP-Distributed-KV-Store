@@ -65,7 +65,7 @@ public class Message{
         String ipPort = headerSplit[2];
         String[] ipPortSplit = ipPort.split(":");
         String ip = ipPortSplit[0];
-        int port = Integer.parseInt(ipPortSplit[1]);
+        int port = Integer.parseInt(ipPortSplit[1].trim());
         // create a Message object
         Message messageObj = new Message(operation, Boolean.parseBoolean(isTestClient), ip, port, body);
         return messageObj;

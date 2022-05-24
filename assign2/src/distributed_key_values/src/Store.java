@@ -1,24 +1,37 @@
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.lang.reflect.Array;
+import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.ServerSocket;
+import java.net.SocketException;
+import java.net.UnknownHostException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.*;
+
+
 import java.net.InetAddress;
 
 
 
 public class Store {
 
-    private final String STARTING_MEMBERSHIP_COUNTER = "0";
+    private static final String STARTING_MEMBERSHIP_COUNTER = "0";
+    private static final int MEMBERSHIP_PORT = 7777;
+    private static final int TIMEOUT_TIME = 10000;
     
     private final String folderLocation; 
 
     //Store main info
     private final String storeIp;
     private final Integer storePort;
+    private String storeId;
 
-    private final List<ArrayList<String>> cluster; 
+    private final List<ArrayList<String>> cluster;
+    private PriorityQueue<String> last32Logs; 
     private final String membershipLog; 
 
     //UDP cluster transport variables
@@ -36,10 +49,20 @@ public class Store {
         this.storePort = storePort;
         this.clusterIp = clusterIp;
         this.clusterPort = clusterPort;
-        this.folderLocation = "../node_db/" + storeIp; 
-        this.membershipLog = this.folderLocation + "membership_log.txt"; 
+        this.last32Logs = new PriorityQueue<String>();
 
-        this.udpClusterServer = new StoreUdpServer(this, clusterIp, clusterPort);
+        try {
+            this.storeId = Encoder.encryptSHA(storeIp);
+        } catch (NoSuchAlgorithmException | UnsupportedEncodingException e1) {
+            // TODO Auto-generated catch block
+            e1.printStackTrace();
+        }
+
+        //Creates Store Id
+        
+
+        this.folderLocation = "./node_db/" + storeId; 
+        this.membershipLog = this.folderLocation + "/membership_log.txt"; 
 
         this.cluster = new ArrayList<ArrayList<String>>(); 
 
@@ -49,16 +72,63 @@ public class Store {
         Thread tcpServer = new Thread(this.tcpConnectionServer);
         tcpServer.start();
 
-       
-        File file = new File(this.folderLocation);
-        boolean flag = file.mkdir();            
+        //Creates Store dir and membershiplog.txt
+        File directory = new File(this.folderLocation);
+        directory.mkdirs();     
+        
+        File membershipLog = new File(this.membershipLog);
+        try {
+            membershipLog.createNewFile();
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
 
     }   
+
+
+
+    public PriorityQueue<String> getLast32Logs() {
+        return last32Logs;
+    }
+
+
+
+    public void setLast32Logs(PriorityQueue<String> last32Logs) {
+        this.last32Logs = last32Logs;
+    }
+
+    public void addLog(String log){
+        if(this.last32Logs.size()==32){
+            last32Logs.poll();
+        }
+
+        last32Logs.add(log);
+    }
+
+
+    public static int getTimeoutTime() {
+        return TIMEOUT_TIME;
+    }
+
+    public static String getStartingMembershipCounter() {
+        return STARTING_MEMBERSHIP_COUNTER;
+    }
+
+    public StoreUdpServer getUdpServer(){
+        return this.udpClusterServer;
+    }
+
+
+    public static int getMembershipPort() {
+        return MEMBERSHIP_PORT;
+    }
 
 
     public String getFolderLocation() {
         return folderLocation;
     }
+
 
     public String getStoreIp() {
         return storeIp;
@@ -72,7 +142,7 @@ public class Store {
         return cluster;
     }
 
-
+    /*
     public boolean addNodeToCluster(String new_node_ip){
         
         if(this.cluster.stream().anyMatch(node -> node.get(0).equals(new_node_ip))) {
@@ -83,6 +153,29 @@ public class Store {
         updateClusterNode(new_node_ip);
         return false;
            
+
+    }
+    */
+
+    public void addStoreToCluster(String storeIp, String membershipCounter){
+
+        for(ArrayList<String> list : this.cluster){
+            if(list.get(0).equals(storeIp)){
+                return;
+            }
+        }
+
+        ArrayList<String> store = new ArrayList<String>();
+        store.add(storeIp);
+        store.add(membershipCounter);
+
+
+        this.cluster.add(store);
+        String log =  storeIp + " " + membershipCounter;
+        addLog(log);
+
+        FileSystem.writeOnFile(this.membershipLog , log);
+
 
     }
 
@@ -117,10 +210,40 @@ public class Store {
         scanner.close();
         return bodyString;
         } catch (FileNotFoundException e) {
-            // TODO Auto-generated catch block
             e.printStackTrace();
             return "ERROR";
         }
+    }
+
+    
+
+    public void join(){
+
+        this.udpClusterServer = new StoreUdpServer(this, clusterIp, clusterPort);
+        Thread udpServer = new Thread(this.udpClusterServer);
+        udpServer.start();
+
+        MembershipProtocolJoin server = new MembershipProtocolJoin(this);
+        Thread thread = new Thread(server);
+
+        thread.start();
+
+    }
+
+    public void initializeMembership(){
+        System.out.println("This is the first Membership Store");
+
+        ArrayList<String> storeInfo = new ArrayList<String>();
+        storeInfo.add(storeIp);
+        storeInfo.add(Store.STARTING_MEMBERSHIP_COUNTER);
+
+        this.cluster.add( storeInfo);
+
+        String log = storeIp + " " + Store.STARTING_MEMBERSHIP_COUNTER;
+        addLog(log);
+        FileSystem.writeOnFile(membershipLog, log);
+
+        
     }
 
 
