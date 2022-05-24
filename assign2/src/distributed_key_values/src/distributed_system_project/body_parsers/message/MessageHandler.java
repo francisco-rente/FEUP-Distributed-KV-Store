@@ -43,12 +43,12 @@ public class MessageHandler implements Runnable {
         Pair<String, String> keyValuePair = putMessageBodyParser.parse();
 
         // store the value in the store or in other nodes (if the key is adequate)
-        String status = this.store.put(keyValuePair.getElement0(), keyValuePair.getElement1());
+        // String status = this.store.put(keyValuePair.getElement0(), keyValuePair.getElement1());
 
-        Message response = new Message("put", false, message.getIp(), message.getPort(),
-                status == null ? "ERROR: File not found" : status);
+        /*Message response = new Message("put", false, message.getIp(), message.getPort(),
+                status == null ? "ERROR: File not found" : status);*/
 
-        sendMessageToSocket(response);
+        //sendMessageToSocket(response);
     }
 
     public void handleDeleteOperation(Message message) {
