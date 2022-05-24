@@ -1,18 +1,14 @@
-package distributed_system_project.body_parsers;
+package distributed_system_project;
 
-import distributed_system_project.body_parsers.message.MessageHandler;
-import distributed_system_project.body_parsers.message.MessageHandlerForAsyncSocket;
+import distributed_system_project.message.MessageHandlerForAsyncSocket;
 
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.io.IOException;
-import java.net.UnknownHostException;
-import java.net.Socket;
 import java.nio.channels.AsynchronousChannelGroup;
 import java.nio.channels.AsynchronousServerSocketChannel;
 import java.nio.channels.AsynchronousSocketChannel;
 import java.nio.channels.CompletionHandler;
-import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 

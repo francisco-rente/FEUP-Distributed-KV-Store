@@ -1,6 +1,6 @@
-package distributed_system_project.body_parsers.message;
+package distributed_system_project.message;
 
-import distributed_system_project.body_parsers.Store;
+import distributed_system_project.Store;
 
 // enum for different message types
 public enum MessageType {

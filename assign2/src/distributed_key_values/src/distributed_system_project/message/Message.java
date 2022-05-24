@@ -1,4 +1,4 @@
-package distributed_system_project.body_parsers.message;
+package distributed_system_project.message;
 
 public class Message{
 

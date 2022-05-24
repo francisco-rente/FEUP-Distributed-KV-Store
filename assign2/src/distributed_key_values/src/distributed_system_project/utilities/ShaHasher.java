@@ -1,4 +1,4 @@
-package distributed_system_project.body_parsers.utilities;
+package distributed_system_project.utilities;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -6,8 +6,6 @@ import java.security.NoSuchAlgorithmException;
 public abstract class ShaHasher {
 
     public ShaHasher() {}
-
-
 
     public static Integer getHashValue(String input) {
         String hash = getHashString(input);

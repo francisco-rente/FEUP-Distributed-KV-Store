@@ -1,10 +1,10 @@
-package distributed_system_project.body_parsers.message;
+package distributed_system_project.message;
 
-import distributed_system_project.body_parsers.message.body_parsers.DeleteMessageBodyParser;
-import distributed_system_project.body_parsers.message.body_parsers.GetMessageBodyParser;
-import distributed_system_project.body_parsers.utilities.Pair;
-import distributed_system_project.body_parsers.Store;
-import distributed_system_project.body_parsers.message.body_parsers.PutMessageBodyParser;
+import distributed_system_project.message.body_parsers.DeleteMessageBodyParser;
+import distributed_system_project.message.body_parsers.GetMessageBodyParser;
+import distributed_system_project.utilities.Pair;
+import distributed_system_project.Store;
+import distributed_system_project.message.body_parsers.PutMessageBodyParser;
 
 import java.io.BufferedReader;
 import java.io.InputStream;
@@ -12,12 +12,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.io.IOException;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.net.InetAddress;
 import java.net.Socket;
-import java.net.SocketException;
-import java.net.UnknownHostException;
 
 public class MessageHandler implements Runnable {
     private final Store store;

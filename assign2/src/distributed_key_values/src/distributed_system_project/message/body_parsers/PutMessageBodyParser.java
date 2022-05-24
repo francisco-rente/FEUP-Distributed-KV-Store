@@ -1,5 +1,5 @@
-package distributed_system_project.body_parsers.message.body_parsers;
-import distributed_system_project.body_parsers.utilities.Pair;
+package distributed_system_project.message.body_parsers;
+import distributed_system_project.utilities.Pair;
 
 public class PutMessageBodyParser extends MessageBodyParser<Pair<String, String>> {
 

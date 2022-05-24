@@ -1,4 +1,4 @@
-package distributed_system_project.body_parsers.message.body_parsers;
+package distributed_system_project.message.body_parsers;
 
 public class DeleteMessageBodyParser extends MessageBodyParser<String> {
 

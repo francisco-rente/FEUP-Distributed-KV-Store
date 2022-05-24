@@ -1,6 +1,10 @@
+package distributed_system_project;
+
+import distributed_system_project.message.Message;
+import distributed_system_project.message.MessageHandler;
+
 import java.io.IOException;
 import java.net.DatagramPacket;
-package distributed_system_project.body_parsers;
 
 import java.net.DatagramSocket;
 import java.net.InetAddress;
@@ -18,7 +22,7 @@ public class StoreUdpServer implements Runnable {
 
 
 
-    StoreUdpServer(Store store ,String clusterIp, Integer clusterPort){
+    public StoreUdpServer(Store store, String clusterIp, Integer clusterPort){
         this.store = store;
         this.clusterIp = clusterIp;
         this.clusterPort = clusterPort;

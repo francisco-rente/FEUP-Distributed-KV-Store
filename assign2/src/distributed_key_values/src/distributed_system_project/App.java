@@ -1,6 +1,6 @@
-package distributed_system_project.body_parsers;
+package distributed_system_project;
 
-import distributed_system_project.body_parsers.message.Message;
+import distributed_system_project.message.Message;
 
 import java.io.OutputStream;
 import java.net.Socket;

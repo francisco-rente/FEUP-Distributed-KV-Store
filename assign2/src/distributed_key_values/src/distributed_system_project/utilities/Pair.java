@@ -1,4 +1,4 @@
-package distributed_system_project.body_parsers.utilities;
+package distributed_system_project.utilities;
 
 public class Pair<K, V> {
 
