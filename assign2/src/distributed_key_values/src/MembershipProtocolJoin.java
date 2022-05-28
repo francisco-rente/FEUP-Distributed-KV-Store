@@ -1,9 +1,3 @@
-package distributed_system_project;
-
-import distributed_system_project.Store;
-import distributed_system_project.message.Message;
-import distributed_system_project.message.MessageHandler;
-
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;

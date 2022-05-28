@@ -1,5 +1,3 @@
-package distributed_system_project;
-
 import java.io.UnsupportedEncodingException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -27,6 +25,7 @@ public class Encoder {
         final byte[] hashbytes = digest.digest(
         value.getBytes("utf-8"));
         return bytesToHex(hashbytes);
+
     }
 
 }

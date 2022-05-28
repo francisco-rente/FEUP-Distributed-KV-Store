@@ -1,12 +1,10 @@
-package distributed_system_project.message;
-
 public class Message{
 
-    private final String operation;
-    private final boolean isTestClient;
-    private final String ip;
-    private final int port;
-    private final String body;
+    private String operation;
+    private boolean isTestClient;
+    private String ip; 
+    private int port;
+    private String body;
     
 
 
@@ -72,5 +70,6 @@ public class Message{
         Message messageObj = new Message(operation, Boolean.parseBoolean(isTestClient), ip, port, body);
         return messageObj;
     }
+    
 
 }

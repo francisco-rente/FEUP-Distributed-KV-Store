@@ -1,18 +1,15 @@
-package distributed_system_project.message;
-
-import distributed_system_project.message.body_parsers.DeleteMessageBodyParser;
-import distributed_system_project.message.body_parsers.GetMessageBodyParser;
-import distributed_system_project.utilities.Pair;
-import distributed_system_project.Store;
-import distributed_system_project.message.body_parsers.PutMessageBodyParser;
-
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.io.IOException;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
 import java.net.Socket;
+import java.net.SocketException;
+import java.net.UnknownHostException;
 
 public class MessageHandler implements Runnable {
     private final Store store;
@@ -35,46 +32,20 @@ public class MessageHandler implements Runnable {
     }
 
     public void handleGetOperation(Message message) {
-        GetMessageBodyParser body_parser = new GetMessageBodyParser(message.getBody());
+        // body has key
+        String key = message.getBody();
 
-        String key = body_parser.parse();
-
-        // obtain value from store or from other nodes
+        // obtain value from store
         String value = this.store.get(key);
 
-        Message response = new Message("get", false, message.getIp(), message.getPort(),
-                (value == null) ? "ERROR: File not found" : value);
+        Message response;
+        if (value != null) {
+            response = new Message("get", false, message.getIp(), message.getPort(), value);
+        } else {
+            response = new Message("get", false, message.getIp(), message.getPort(), "ERROR: File not found");
+        }
 
-        sendMessageToSocket(response);
-    }
-
-    public void handlePutOperation(Message message) {
-        PutMessageBodyParser putMessageBodyParser = new PutMessageBodyParser(message.getBody());
-        Pair<String, String> keyValuePair = putMessageBodyParser.parse();
-
-        // store the value in the store or in other nodes (if the key is adequate)
-        // String status = this.store.put(keyValuePair.getElement0(), keyValuePair.getElement1());
-
-        /*Message response = new Message("put", false, message.getIp(), message.getPort(),
-                status == null ? "ERROR: File not found" : status);*/
-
-        //sendMessageToSocket(response);
-    }
-
-    public void handleDeleteOperation(Message message) {
-        DeleteMessageBodyParser deleteMessageBodyParser = new DeleteMessageBodyParser(message.getBody());
-        String key = deleteMessageBodyParser.parse();
-
-        // tombstone the value in the store or in other nodes
-        String status = this.store.delete(key);
-
-        Message response = new Message("delete", false, message.getIp(),
-                message.getPort(), status == null ? "ERROR: PUT OPERATION UNSUCCESSFUL" : status);
-
-        sendMessageToSocket(response);
-    }
-
-    private void sendMessageToSocket(Message response) {
+        // create output stream
         OutputStream outputStream;
         try {
             outputStream = this.socket.getOutputStream();
@@ -84,6 +55,17 @@ public class MessageHandler implements Runnable {
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
+    }
+
+    public void handlePutOperation(Message message) {
+        // get key value pair from body
+        // ArrayList<String> keyValuePair = message.getBody(PUT_BODY);
+
+        // put api call
+    }
+
+    public void handleDeleteOperation(Message message) {
+
     }
 
     public void handleJoinOperation(Message message) {
@@ -99,7 +81,7 @@ public class MessageHandler implements Runnable {
 
             String body = "";
 
-
+            
 
             Message send = new Message("membership", false, message.getIp(), message.getPort(), body );
 
@@ -120,16 +102,16 @@ public class MessageHandler implements Runnable {
                 InputStream input = this.socket.getInputStream();
                 BufferedReader reader = new BufferedReader(new InputStreamReader(input));
                 String messageString = "";
-
+    
                 // read until the end of the stream
                 String line = "";
                 while ((line = reader.readLine()) != null) {
                     // concat the line to the message
                     messageString += line;
                 }
-
+    
                 this.message = Message.toObject(messageString);
-
+    
                 MessageType type = MessageType.getMessageType(message, this.store);
                 // TODO discover header type
                 switch (type) {
@@ -152,7 +134,7 @@ public class MessageHandler implements Runnable {
                         break;
 
                 }
-
+    
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -162,4 +144,6 @@ public class MessageHandler implements Runnable {
 
         }
     }
+
+        
 }
