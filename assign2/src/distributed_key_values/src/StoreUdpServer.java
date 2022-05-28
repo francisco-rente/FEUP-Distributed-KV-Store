@@ -1,16 +1,11 @@
-package distributed_system_project;
-
-import distributed_system_project.message.Message;
-import distributed_system_project.message.MessageHandler;
-
 import java.io.IOException;
 import java.net.DatagramPacket;
-
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.MulticastSocket;
 import java.net.SocketException;
 import java.net.UnknownHostException;
+
 
 public class StoreUdpServer implements Runnable {
 
@@ -22,7 +17,7 @@ public class StoreUdpServer implements Runnable {
 
 
 
-    public StoreUdpServer(Store store, String clusterIp, Integer clusterPort){
+    StoreUdpServer(Store store ,String clusterIp, Integer clusterPort){
         this.store = store;
         this.clusterIp = clusterIp;
         this.clusterPort = clusterPort;
@@ -38,7 +33,7 @@ public class StoreUdpServer implements Runnable {
         } catch (IOException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
-        }
+        }      
     }
 
 
@@ -52,7 +47,7 @@ public class StoreUdpServer implements Runnable {
                 System.out.println("waiting for udp Connections");
                 DatagramPacket packet = new DatagramPacket(rbuf, rbuf.length, ip_address, clusterPort);
 
-                packet = new DatagramPacket(rbuf, rbuf.length);
+                packet = new DatagramPacket(rbuf, rbuf.length);  
                 udpServeDatagramSocket.receive(packet);
                 String messageReceived = new String(packet.getData(), 0, packet.getLength());
 
@@ -67,7 +62,7 @@ public class StoreUdpServer implements Runnable {
                     System.out.println("Received the message it sent");
                 }
 
-            }
+            }   
 
         } catch (UnknownHostException e) {
             // TODO Auto-generated catch block
@@ -80,7 +75,7 @@ public class StoreUdpServer implements Runnable {
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
-
+        
     }
 
     public DatagramSocket getDatagramSocket(){

@@ -1,5 +1,3 @@
-package distributed_system_project;
-
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
