@@ -1,10 +1,15 @@
 package distributed_system_project;
 
 import distributed_system_project.message.Message;
+import distributed_system_project.message.body_parsers.DeleteMessageBodyParser;
+import distributed_system_project.message.body_parsers.GetMessageBodyParser;
 import distributed_system_project.utilities.Pair;
 import distributed_system_project.utilities.ShaHasher;
+import distributed_system_project.utilities.SocketsIo;
+
 import java.io.*;
 import java.net.*;
+import java.nio.channels.ServerSocketChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -39,13 +44,12 @@ public class Store {
     private StoreTcpServer tcpConnectionServer;
 
 
-
     public Store(String storeIp, Integer storePort, String clusterIp, Integer clusterPort) {
         this.storeIp = storeIp;
         this.storePort = storePort;
         this.clusterIp = clusterIp;
         this.clusterPort = clusterPort;
-        this.last32Logs = new PriorityQueue<String>();
+        this.last32Logs = new PriorityQueue<>();
 
         try {
             this.storeId = Encoder.encryptSHA(storeIp);
@@ -60,7 +64,9 @@ public class Store {
         this.folderLocation = "./node_db/" + storeId;
         this.membershipLog = this.folderLocation + "/membership_log.txt";
 
-        this.cluster = new ArrayList<ArrayList<String>>();
+        this.cluster = new ArrayList<>();
+        this.cluster.add(new ArrayList<>(Arrays.asList(storeIp, String.valueOf(storePort), STARTING_MEMBERSHIP_COUNTER)));
+
 
         System.out.println("Creating TCP server");
         this.tcpConnectionServer = new StoreTcpServer(this, this.storeIp, storePort);
@@ -83,19 +89,17 @@ public class Store {
     }
 
 
-
     public PriorityQueue<String> getLast32Logs() {
         return last32Logs;
     }
-
 
 
     public void setLast32Logs(PriorityQueue<String> last32Logs) {
         this.last32Logs = last32Logs;
     }
 
-    public void addLog(String log){
-        if(this.last32Logs.size()==32){
+    public void addLog(String log) {
+        if (this.last32Logs.size() == 32) {
             last32Logs.poll();
         }
 
@@ -111,7 +115,7 @@ public class Store {
         return STARTING_MEMBERSHIP_COUNTER;
     }
 
-    public StoreUdpServer getUdpServer(){
+    public StoreUdpServer getUdpServer() {
         return this.udpClusterServer;
     }
 
@@ -153,10 +157,10 @@ public class Store {
     }
     */
 
-    public void addStoreToCluster(String storeIp, String membershipCounter){
+    public void addStoreToCluster(String storeIp, String membershipCounter) {
 
-        for(ArrayList<String> list : this.cluster){
-            if(list.get(0).equals(storeIp)){
+        for (ArrayList<String> list : this.cluster) {
+            if (list.get(0).equals(storeIp)) {
                 return;
             }
         }
@@ -167,15 +171,13 @@ public class Store {
 
 
         this.cluster.add(store);
-        String log =  storeIp + " " + membershipCounter;
+        String log = storeIp + " " + membershipCounter;
         addLog(log);
 
-        FileSystem.writeOnFile(this.membershipLog , log);
-
-
+        FileSystem.writeOnFile(this.membershipLog, log);
     }
 
-    public boolean updateClusterNode(String new_node_ip){
+    public boolean updateClusterNode(String new_node_ip) {
         return true;
 
     }
@@ -195,139 +197,151 @@ public class Store {
 
     public String get(String filekey) {
         try {
-            // see if file exists in this node, if it does return the file
-            if (new File(this.folderLocation + filekey).exists()) {
-                // TODO: should this be async?
-                byte[] encoded = Files.readAllBytes(Paths.get(this.folderLocation + filekey));
+            if (new File(this.folderLocation + "/" + filekey).exists()) {
+
+                byte[] encoded = Files.readAllBytes(Paths.get(this.folderLocation + "/" + filekey));
                 return new String(encoded, StandardCharsets.UTF_8);
+
             } else {
+
                 Pair<String, Integer> nearest_node = this.getNearestNode(filekey);
 
-                if (nearest_node.getElement0().isEmpty()) {
-                    throw new FileNotFoundException();
-                }
+                if (nearest_node.getElement0().isEmpty()) throw new FileNotFoundException();
 
-                Message request_message = new Message("get", false, nearest_node.getElement0(), nearest_node.getElement1(), filekey);
-                this.sendMessage(request_message);
+                Message request_message = new Message("get", false,
+                        nearest_node.getElement0(), nearest_node.getElement1(), filekey);
+
+                Socket socket = this.sendMessage(request_message);
+                Message response_message = this.getMessage(socket);
+
+                GetMessageBodyParser parser = new GetMessageBodyParser(response_message.getBody());
+                return parser.parse();
             }
-        } catch (FileNotFoundException e) {
-            // TODO Auto-generated catch block
+        } catch (IOException e) {
             e.printStackTrace();
             return "FILE_NOT_FOUND_ERROR";
-        } catch (IOException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-            return "MESSAGE_SEND_ERROR";
         }
-        return "ERROR";
+    }
+
+
+    String searchDirectory(String filekey) throws IOException {
+        if (!new File(this.folderLocation + "/" + filekey).exists()) return null;
+        byte[] encoded = Files.readAllBytes(Paths.get(this.folderLocation + "/" + filekey));
+
+        //TODO: Does something have to happen for tombstones?
+
+        return new String(encoded, StandardCharsets.UTF_8);
+    }
+
+    boolean deleteFile(String filekey) {
+        File file = new File(this.folderLocation + "/" + filekey);
+        return file.renameTo(new File(this.folderLocation + "/" + filekey + ".deleted"));
     }
 
 
     public String delete(String filekey) {
         try {
-            // see if file exists in this node, if it does return the file
-            boolean file_exists = new File(this.folderLocation + filekey).exists();
-            if (file_exists) {
-                // TODO: place tombstone in the file
-            }
+            if (searchDirectory(filekey) != null) return (deleteFile(filekey)) ? "FILE_DELETED" : "FILE_DELETE_ERROR";
 
-            List<Pair<String, Integer>> nearest_nodes = this.getNearestNodesWithFile(filekey);
+            Pair<String, Integer> nearest_node = this.getNearestNode(filekey);
+            if (nearest_node.getElement0().isEmpty()) throw new FileNotFoundException();
 
-            assert nearest_nodes != null;
-            if (nearest_nodes.isEmpty() && !file_exists) {
-                throw new FileNotFoundException();
-            }
+            Message request_message = new Message("delete", false,
+                    nearest_node.getElement0(), nearest_node.getElement1(), filekey);
+            this.sendMessage(request_message);
 
-            for (Pair<String, Integer> node : nearest_nodes) {
-                Message request_message = new Message("delete", false, node.getElement0(), node.getElement1(), filekey);
-                this.sendMessage(request_message);
-            }
+            Socket socket = this.sendMessage(request_message);
+            Message response_message = this.getMessage(socket);
+
+            DeleteMessageBodyParser parser = new DeleteMessageBodyParser(response_message.getBody());
+            return parser.parse();
 
         } catch (FileNotFoundException e) {
-            // TODO Auto-generated catch block
             e.printStackTrace();
             return "FILE_NOT_FOUND_ERROR";
         } catch (IOException e) {
-            // TODO Auto-generated catch block
             e.printStackTrace();
-            return "MESSAGE_SEND_ERROR";
+            return "FILE_DELETE_ERROR";
         }
-        return "ERROR";
     }
 
     private List<Pair<String, Integer>> getNearestNodesWithFile(String filekey) {
-        // TODO: hash the filekey and find the nearest nodes in the cluster list
-        //  using 0 - 2 ^ 256 - 1 circular hash and binary search
-        return null;
+        List<Pair<String, Integer>> nearest_nodes = new ArrayList<>();
+        return nearest_nodes;
     }
 
     public String put(String filekey, String value) throws IOException {
 
-
-        // get the nearest node to this filekey
         Pair<String, Integer> nearest_node = this.getNearestNode(filekey);
 
-        // compare the hash of the filekey to the hash of the nearest node and this one
+        if (nearest_node.getElement0().isEmpty()) throw new FileNotFoundException("No nearest node found");
 
-        int hash_of_filekey = ShaHasher.getHashValue(filekey);
-        int hash_of_nearest_node = ShaHasher.getHashValue(nearest_node.getElement0());
-        int hash_of_this_node = ShaHasher.getHashValue(this.storeIp);
+        if (Objects.equals(nearest_node.getElement0(), this.storeIp)) {
+            boolean file_exists = new File(this.folderLocation + "/" + filekey).exists();
+            if (file_exists) return "ERROR";
+            Files.write(Paths.get(this.folderLocation + "/" + filekey), value.getBytes(), StandardOpenOption.CREATE);
+            return "SUCCESS";
+        } else {
+            System.out.println("Redirect put request to " + nearest_node.getElement0() + ":" + nearest_node.getElement1());
 
-
-        // see which has a bigger difference hash_of_nearest_node - hash_of_filekey or hash_of_this_node - hash_of_filekey
-        if ((hash_of_nearest_node - hash_of_filekey) % (2 ^ 256 - 1) > (hash_of_this_node - hash_of_filekey) % (2 ^ 256 - 1)) {
             // send the file to the nearest node
             Message request_message = new Message("put", false,
                     nearest_node.getElement0(), nearest_node.getElement1(), filekey + '\n' + value);
-            this.sendMessage(request_message);
+            Socket socket = this.sendMessage(request_message);
 
-        } else {
-            boolean file_exists = new File(this.folderLocation + filekey).exists();
-
-            if(file_exists) return "ERROR";
-
-            Files.write(Paths.get(this.folderLocation + filekey), value.getBytes(), StandardOpenOption.CREATE);
+            Message response = this.getMessage(socket);
+            return response.getBody().equals("ERROR") ? "ERROR" : "SUCCESS";
         }
-
-        // Check if file already exists in this node
-        return "SUCCESS";
     }
 
 
-    private void sendMessage(Message request_message) throws IOException {
+    private Socket sendMessage(Message request_message) throws IOException {
         String nodeIp = request_message.getIp();
         int nodePort = request_message.getPort();
 
         System.out.println("Sending" + request_message.getOperation() + " message to " + nodeIp + ":" + nodePort);
         Socket socket = new Socket(nodeIp, nodePort);
 
-        OutputStream output = socket.getOutputStream();
-        PrintWriter writer = new PrintWriter(output, true);
-        writer.println(request_message);
+        SocketsIo.sendStringToSocket(request_message.toString(), socket);
+        return socket;
     }
 
+
+    private Message getMessage(Socket socket) throws IOException {
+        String messageString = SocketsIo.readFromSocket(socket);
+        assert messageString != null;
+        return Message.toObject(messageString);
+    }
+
+
     private Pair<String, Integer> getNearestNode(String filekey) {
-        String nearest_node_ip = "";
-        int nearest_node_port = -1;
+        String nearest_node_ip;
+        int nearest_node_port;
 
+        // get nodes with active counter
+        List<ArrayList<String>> availableNodes =
+                new ArrayList<>(this.cluster.stream().filter(node -> Integer.parseInt(node.get(2)) % 2 == 0).toList());
 
-        // order the cluster by the first element of array (node ip hash)
-        this.cluster.sort(Comparator.comparing(node -> ShaHasher.getHashValue(node.get(0))));
+        // sort available nodes ip value using a lambda that uses compareTo
+        availableNodes.sort(Comparator.comparing((ArrayList<String> node) -> ShaHasher.getHashString(node.get(0))));
 
-        // TODO: binary search to find the node that is closest to the filekey using 0 - 2 ^ 256 - 1 circular hash
-        int index = Collections.binarySearch(this.cluster, new ArrayList<>(Arrays.asList(filekey, "")), Comparator.comparing(node -> ShaHasher.getHashValue(node.get(0))));
+        int index = Collections.binarySearch(this.cluster, new ArrayList<>(Arrays.asList(filekey, "")),
+                Comparator.comparing(node -> ShaHasher.getHashString(node.get(0))));
 
-        if (index > 0) {
-            nearest_node_ip = this.cluster.get(index).get(0);
-            nearest_node_port = Integer.parseInt(this.cluster.get(index).get(1));
+        if (index < 0) {
+            index = -index - 1; // revert the negative index
+            if (index == availableNodes.size()) index = 0; // if it overflows, set it to the first node
         }
 
+        System.out.println("Store Index for the operation: " + index + "\n");
+
+        nearest_node_ip = this.cluster.get(index).get(0);
+        nearest_node_port = Integer.parseInt(this.cluster.get(index).get(1));
         return Pair.createPair(nearest_node_ip, nearest_node_port);
     }
 
 
-
-    public void join(){
+    public void join() {
 
         this.udpClusterServer = new StoreUdpServer(this, clusterIp, clusterPort);
         Thread udpServer = new Thread(this.udpClusterServer);
@@ -340,14 +354,14 @@ public class Store {
 
     }
 
-    public void initializeMembership(){
+    public void initializeMembership() {
         System.out.println("This is the first Membership Store");
 
         ArrayList<String> storeInfo = new ArrayList<String>();
         storeInfo.add(storeIp);
         storeInfo.add(Store.STARTING_MEMBERSHIP_COUNTER);
 
-        this.cluster.add( storeInfo);
+        this.cluster.add(storeInfo);
 
         String log = storeIp + " " + Store.STARTING_MEMBERSHIP_COUNTER;
         addLog(log);
@@ -356,7 +370,7 @@ public class Store {
 
 
     public static void main(String[] args) {
-        if(args.length!=4 ){
+        if (args.length != 4) {
             System.out.println("Error in number of arguments. Please write something like this on temrinal:\n Store clusterIp clusterPort storeIp storePort");
             return;
         }
@@ -370,10 +384,7 @@ public class Store {
 
         Store store = new Store(storeIp, storePort, clusterIp, clusterPort);
 
-        while(true){
-
-        }
-
+        while (true) {}
     }
 
 }

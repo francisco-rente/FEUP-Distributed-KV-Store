@@ -31,6 +31,9 @@ public class Message{
     }
 
     public Message(String operation, boolean isTestClient, String ip, int port, String body){
+
+        System.out.println("RECEIVED MESSAGE: " + operation + "\n");
+
         this.operation = operation;
         this.isTestClient = isTestClient;
         this.ip = ip;
@@ -58,19 +61,31 @@ public class Message{
     public static Message toObject(String message){
         //create a Message object from the string
         String[] messageSplit = message.split("body:");
+        System.out.println("message: " + message);
         String header = messageSplit[0];
         String body = messageSplit[1];
-        // split header
+
+        System.out.println("BODY: " + body);
+
+        // split header trimming newline characters
         String[] headerSplit = header.split(" ");
+
+        // print header
+        for(String s : headerSplit){
+            System.out.println(s);
+        }
+
         String operation = headerSplit[0];
+        System.out.println("operation: " + operation);
+
+
         String isTestClient = headerSplit[1];
         String ipPort = headerSplit[2];
         String[] ipPortSplit = ipPort.split(":");
         String ip = ipPortSplit[0];
         int port = Integer.parseInt(ipPortSplit[1].trim());
         // create a Message object
-        Message messageObj = new Message(operation, Boolean.parseBoolean(isTestClient), ip, port, body);
-        return messageObj;
+        return new Message(operation, Boolean.parseBoolean(isTestClient), ip, port, body);
     }
 
 }

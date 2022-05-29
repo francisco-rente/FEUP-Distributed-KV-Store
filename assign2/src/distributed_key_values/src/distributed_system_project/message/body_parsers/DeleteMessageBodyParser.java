@@ -8,6 +8,6 @@ public class DeleteMessageBodyParser extends MessageBodyParser<String> {
 
     @Override
     public String parse() {
-        return this.message_body;
+        return this.message_body.trim();
     }
 }

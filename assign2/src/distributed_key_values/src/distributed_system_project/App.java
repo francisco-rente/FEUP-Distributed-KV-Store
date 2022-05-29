@@ -1,14 +1,15 @@
 package distributed_system_project;
 
 import distributed_system_project.message.Message;
+import distributed_system_project.utilities.ShaHasher;
+import distributed_system_project.utilities.SocketsIo;
 
-import java.io.OutputStream;
+import java.io.*;
 import java.net.Socket;
-import java.io.PrintWriter;
 import java.util.Scanner;
 
 // import FileUtils
-import java.io.File;
+
 
 public class App {
     public static void main(String[] args) throws Exception {
@@ -22,7 +23,7 @@ public class App {
         String[] nodeAddressSplit = args[0].split(":");
         String nodeIp = nodeAddressSplit[0];
         int nodePort = Integer.parseInt(nodeAddressSplit[1]);
-        
+
         System.out.println("nodeIp: " + nodeIp + " nodePort: " + nodePort);
 
         // get operation from args[2]
@@ -37,24 +38,32 @@ public class App {
         StringBuilder bodyString = new StringBuilder();
 
         if (operation.equals("put")) {
-            String filePath = args[3];
+
+            String filePath = args[2];
+            final String key = ShaHasher.getHashString(args[2]);
+            System.out.println("fileKey: " + key);
             // read file content using Scanner
+            bodyString.append(key).append("\n");
             Scanner scanner = new Scanner(new File(filePath));
             while (scanner.hasNextLine()) {
                 bodyString.append(scanner.nextLine());
             }
             scanner.close();
+
+            System.out.println("bodyString: " + bodyString);
         }
 
         if (operation.equals("delete") || operation.equals("get")) {
             // get key from args[3]3
-            final String key = args[3];
+            final String key = ShaHasher.getHashString(args[2]);
+            System.out.println("key: " + key);
             bodyString = new StringBuilder(key);
         }
 
         Message message = new Message(operation, true, nodeIp, nodePort, bodyString.toString());
 
-        System.out.println("Creating Socket");
+        System.out.println("Creating Socket to node: " + nodeIp + ":" + nodePort);
+        System.out.println("Sending message:------------ \n" + message + "\n-----------------");
         Socket socket = new Socket(nodeIp, nodePort);
 
         System.out.println("Creating OutputStream");
@@ -62,19 +71,11 @@ public class App {
         PrintWriter writer = new PrintWriter(output, true);
         writer.println(message);
 
-        /*
-         * InputStream input = socket.getInputStream();
-         * byte[] buffer = new byte[1024];
-         * int bytesRead = input.read(buffer);
-         * String response = new String(buffer, 0, bytesRead);
-         * System.out.println(response);
-         * socket.close();
-         */
 
-        // send and wait for the response
-
-        // send socket message
-
+        // wait for response
+        System.out.println("Waiting for response");
+        String response = SocketsIo.readFromSocket(socket);
+        System.out.println("Response: " + response);
     }
 }
 

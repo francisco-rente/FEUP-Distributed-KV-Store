@@ -9,10 +9,16 @@ public class PutMessageBodyParser extends MessageBodyParser<Pair<String, String>
 
     @Override
     public Pair<String, String> parse() {
-        String[] split_message_body = this.message_body.split("\\n");
 
-        String key = split_message_body[0];
-        String value = split_message_body[1];
+        System.out.println("PUT: " + this.message_body); 
+
+        String[] split_message_body = this.message_body.trim().split("\\n");
+
+        String key = split_message_body[0].trim();
+        String value = split_message_body[1].trim();
+
+        System.out.println("KEY: " + key + " VALUE: " + value);
+
         return new Pair<>(key, value);
     }
 }

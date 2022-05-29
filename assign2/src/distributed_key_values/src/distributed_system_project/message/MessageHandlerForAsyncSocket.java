@@ -30,10 +30,14 @@ public class MessageHandlerForAsyncSocket implements Runnable {
         // obtain value from store or from other nodes
         String value = this.store.get(key);
 
-        Message response = new Message("get", false, message.getIp(), message.getPort(),
+        if(value == null) System.out.println("Value not found");
+        else System.out.println("Got value for key: " + key + " value: " + value);
+
+
+        Message response = new Message("get", true, message.getIp(), message.getPort(),
                 (value == null) ? "ERROR: File not found" : value);
 
-        sendMessageToSocket(response);
+        sendMessageToSocket(response, this.socket);
     }
 
     public void handlePutOperation(Message message) {
@@ -51,7 +55,7 @@ public class MessageHandlerForAsyncSocket implements Runnable {
         Message response = new Message("put", false, message.getIp(), message.getPort(),
                 status == null ? "ERROR: File not found" : status);
 
-        sendMessageToSocket(response);
+        sendMessageToSocket(response, this.socket);
     }
 
     public void handleDeleteOperation(Message message) {
@@ -64,7 +68,7 @@ public class MessageHandlerForAsyncSocket implements Runnable {
         Message response = new Message("delete", false, message.getIp(),
                 message.getPort(), status == null ? "ERROR: PUT OPERATION UNSUCCESSFUL" : status);
 
-        sendMessageToSocket(response);
+        sendMessageToSocket(response, this.socket);
     }
 
 
@@ -80,7 +84,7 @@ public class MessageHandlerForAsyncSocket implements Runnable {
     public void run() {
         String messageString = getMessageString();
 
-        this.message = Message.toObject(messageString.toString());
+        this.message = Message.toObject(messageString);
 
         MessageType type = MessageType.getMessageType(message, this.store);
         handleMessage(type);
@@ -88,7 +92,7 @@ public class MessageHandlerForAsyncSocket implements Runnable {
 
 
 
-    private void sendMessageToSocket(Message response) {
+    public static void sendMessageToSocket(Message response, AsynchronousSocketChannel socket) {
         byte[] response_bytes = response.toString().getBytes();
         ByteBuffer buffer = ByteBuffer.wrap(response_bytes);
         socket.write(buffer, null, new CompletionHandler<Integer, Void>() {
@@ -144,7 +148,7 @@ public class MessageHandlerForAsyncSocket implements Runnable {
 
         // read message from socket with CompletionHandler
         ByteBuffer buffer = ByteBuffer.allocate(READ_BUFFER_MAX_SIZE);
-        socket.read(buffer, null, new CompletionHandler<Integer, Void>() {
+        this.socket.read(buffer, null, new CompletionHandler<Integer, Void>() {
             @Override
             public void completed(Integer result, Void attachment) {
                 System.out.printf("Read %d bytes from socket\n", result);

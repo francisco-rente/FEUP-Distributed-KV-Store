@@ -16,14 +16,21 @@ public enum MessageType {
     // convert enum type to string
 
     public static MessageType getMessageType(Message message, Store store) {
-        return switch (message.getOperation()) {
-            case "join" -> MessageType.JOIN;
-            case "leave" -> MessageType.LEAVE;
-            case "get" -> MessageType.GET;
-            case "put" -> MessageType.PUT;
-            case "delete" -> MessageType.DELETE;
-            default -> MessageType.UNKNOWN;
-        };
+
+        switch (message.getOperation()){
+            case "join":
+                return JOIN;
+            case "leave":
+                return LEAVE;
+            case "get":
+                return GET;
+            case "put":
+                return PUT;
+            case "delete":
+                return DELETE;
+            default:
+                return UNKNOWN;
+        }
     }
 
 }

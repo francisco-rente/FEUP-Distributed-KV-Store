@@ -5,6 +5,7 @@ import distributed_system_project.message.body_parsers.GetMessageBodyParser;
 import distributed_system_project.utilities.Pair;
 import distributed_system_project.Store;
 import distributed_system_project.message.body_parsers.PutMessageBodyParser;
+import distributed_system_project.utilities.SocketsIo;
 
 import java.io.BufferedReader;
 import java.io.InputStream;
@@ -13,6 +14,7 @@ import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.io.IOException;
 import java.net.Socket;
+
 
 public class MessageHandler implements Runnable {
     private final Store store;
@@ -29,15 +31,22 @@ public class MessageHandler implements Runnable {
 
     //Fpr udp
     public MessageHandler(Store store, Message message){
+
+        System.out.println("RECEIVED MESSAGE: " + message.getOperation() + "\n");
+
         this.store = store;
         this.message = message;
         this.isTcp = false;
     }
 
-    public void handleGetOperation(Message message) {
+    public void handleGetOperation(Message message) throws IOException {
         GetMessageBodyParser body_parser = new GetMessageBodyParser(message.getBody());
 
         String key = body_parser.parse();
+
+        System.out.println("-----------------\n");
+        System.out.println("Get Request: " + key);
+        System.out.println("-----------------\n");
 
         // obtain value from store or from other nodes
         String value = this.store.get(key);
@@ -45,46 +54,53 @@ public class MessageHandler implements Runnable {
         Message response = new Message("get", false, message.getIp(), message.getPort(),
                 (value == null) ? "ERROR: File not found" : value);
 
-        sendMessageToSocket(response);
+        System.out.println("-----------------\n");
+        System.out.println("Sending Get Response: " + response);
+        System.out.println("-----------------\n");
+
+        SocketsIo.sendStringToSocket(response.toString(), this.socket);
     }
 
-    public void handlePutOperation(Message message) {
+    public void handlePutOperation(Message message) throws IOException {
         PutMessageBodyParser putMessageBodyParser = new PutMessageBodyParser(message.getBody());
         Pair<String, String> keyValuePair = putMessageBodyParser.parse();
 
+
+        System.out.println("-----------------\n");
+        System.out.println("PUT REQUEST RECEIVED: " + keyValuePair.getElement0() + " " + keyValuePair.getElement1());
+        System.out.println("-----------------\n");
+
         // store the value in the store or in other nodes (if the key is adequate)
-        // String status = this.store.put(keyValuePair.getElement0(), keyValuePair.getElement1());
+        String status = this.store.put(keyValuePair.getElement0(), keyValuePair.getElement1());
 
-        /*Message response = new Message("put", false, message.getIp(), message.getPort(),
-                status == null ? "ERROR: File not found" : status);*/
+        Message response = new Message("put", false, message.getIp(), message.getPort(),
+                status == null ? "ERROR: File not found" : status);
 
-        //sendMessageToSocket(response);
+        SocketsIo.sendStringToSocket(response.toString(), this.socket);
     }
 
     public void handleDeleteOperation(Message message) {
         DeleteMessageBodyParser deleteMessageBodyParser = new DeleteMessageBodyParser(message.getBody());
         String key = deleteMessageBodyParser.parse();
 
+        System.out.println("-----------------\n");
+        System.out.println("DELETE REQUEST RECEIVED: " + key);
+        System.out.println("-----------------\n");
+
         // tombstone the value in the store or in other nodes
         String status = this.store.delete(key);
 
+        System.out.println("-----------------\n");
+        System.out.println("DELETE STATUS: " + status);
+        System.out.println("-----------------\n");
+
         Message response = new Message("delete", false, message.getIp(),
-                message.getPort(), status == null ? "ERROR: PUT OPERATION UNSUCCESSFUL" : status);
+                message.getPort(), status);
 
-        sendMessageToSocket(response);
+        SocketsIo.sendStringToSocket(response.toString(), this.socket);
     }
 
-    private void sendMessageToSocket(Message response) {
-        OutputStream outputStream;
-        try {
-            outputStream = this.socket.getOutputStream();
-            PrintWriter printWriter = new PrintWriter(outputStream, true);
-            printWriter.println(response.toString());
-        } catch (IOException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
-    }
+
 
     public void handleJoinOperation(Message message) {
         //Create socket to send message
@@ -93,17 +109,12 @@ public class MessageHandler implements Runnable {
 
         }else{
 
-            System.out.println(message.toString());
+            System.out.println(message);
             //Add store to cluster
             this.store.addStoreToCluster(message.getIp(), Store.getStartingMembershipCounter());
 
             String body = "";
-
-
-
             Message send = new Message("membership", false, message.getIp(), message.getPort(), body );
-
-
         }
 
     }
@@ -116,21 +127,20 @@ public class MessageHandler implements Runnable {
     public void run() {
 
         if(this.isTcp){
+            System.out.println("TCP");
+
             try {
-                InputStream input = this.socket.getInputStream();
-                BufferedReader reader = new BufferedReader(new InputStreamReader(input));
-                String messageString = "";
+                // read all lines of the message until EOF
+                String messageString =  SocketsIo.readFromSocket(this.socket);
+                System.out.println("RECEIVED MESSAGE: " + messageString + "\n");
 
-                // read until the end of the stream
-                String line = "";
-                while ((line = reader.readLine()) != null) {
-                    // concat the line to the message
-                    messageString += line;
-                }
-
+                assert messageString != null;
                 this.message = Message.toObject(messageString);
 
                 MessageType type = MessageType.getMessageType(message, this.store);
+
+                System.out.println("HANDLING OPERATION : " + message.getOperation() + "\n");
+
                 // TODO discover header type
                 switch (type) {
                     case GET:
@@ -150,16 +160,22 @@ public class MessageHandler implements Runnable {
                         break;
                     case UNKNOWN:
                         break;
-
                 }
+                this.socket.close();
 
             } catch (IOException e) {
                 e.printStackTrace();
             }
         } else{
-
             this.handleJoinOperation(this.message);
+        }
+    }
 
+    public void closeSocket(){
+        try {
+            this.socket.close();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 }
