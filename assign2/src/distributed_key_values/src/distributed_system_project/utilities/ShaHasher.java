@@ -1,21 +1,14 @@
 package distributed_system_project.utilities;
 
-import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
-import distributed_system_project.Encoder;
 
 public abstract class ShaHasher {
 
     public ShaHasher() {
     }
 
-
-    public static Integer getHashValue(String input) {
-        String hash = getHashString(input);
-        return Integer.parseInt(hash, 16);
-    }
 
     public static String getHashString(String input) {
         try {

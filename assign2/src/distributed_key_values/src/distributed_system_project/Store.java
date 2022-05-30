@@ -322,11 +322,19 @@ public class Store {
         List<ArrayList<String>> availableNodes =
                 new ArrayList<>(this.cluster.stream().filter(node -> Integer.parseInt(node.get(2)) % 2 == 0).toList());
 
+        System.out.println("Available nodes: " + availableNodes);
+
         // sort available nodes ip value using a lambda that uses compareTo
         availableNodes.sort(Comparator.comparing((ArrayList<String> node) -> ShaHasher.getHashString(node.get(0))));
 
-        int index = Collections.binarySearch(this.cluster, new ArrayList<>(Arrays.asList(filekey, "")),
-                Comparator.comparing(node -> ShaHasher.getHashString(node.get(0))));
+        List<String> node_ips = availableNodes.stream().map(node -> node.get(0)).toList();
+
+        // print hashed values of nodes ip
+        System.out.println("Hashed values of nodes ip: " + node_ips.stream().map(ShaHasher::getHashString).toList());
+
+        int index = Collections.binarySearch(node_ips, filekey, Comparator.comparing(ShaHasher::getHashString));
+
+        System.out.println("Binary search index: " + index);
 
         if (index < 0) {
             index = -index - 1; // revert the negative index

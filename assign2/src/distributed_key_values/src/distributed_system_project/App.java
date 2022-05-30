@@ -38,9 +38,11 @@ public class App {
         StringBuilder bodyString = new StringBuilder();
 
         if (operation.equals("put")) {
-
+            // get sufix from file path in args[2]
             String filePath = args[2];
-            final String key = ShaHasher.getHashString(args[2]);
+            String fileName = filePath.substring(filePath.lastIndexOf("/") + 1);
+
+            final String key = ShaHasher.getHashString(fileName);
             System.out.println("fileKey: " + key);
             // read file content using Scanner
             bodyString.append(key).append("\n");
@@ -55,7 +57,9 @@ public class App {
 
         if (operation.equals("delete") || operation.equals("get")) {
             // get key from args[3]3
-            final String key = ShaHasher.getHashString(args[2]);
+            String filePath = args[2];
+            String fileName = filePath.substring(filePath.lastIndexOf("/") + 1);
+            final String key = ShaHasher.getHashString(fileName);
             System.out.println("key: " + key);
             bodyString = new StringBuilder(key);
         }
