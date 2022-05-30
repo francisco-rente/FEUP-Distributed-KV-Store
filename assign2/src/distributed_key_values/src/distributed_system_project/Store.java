@@ -328,11 +328,11 @@ public class Store {
         availableNodes.sort(Comparator.comparing((ArrayList<String> node) -> ShaHasher.getHashString(node.get(0))));
 
         List<String> node_ips = availableNodes.stream().map(node -> node.get(0)).toList();
+        List<String> hash_values = node_ips.stream().map(ShaHasher::getHashString).toList();
 
         // print hashed values of nodes ip
-        System.out.println("Hashed values of nodes ip: " + node_ips.stream().map(ShaHasher::getHashString).toList());
-
-        int index = Collections.binarySearch(node_ips, filekey, Comparator.comparing(ShaHasher::getHashString));
+        System.out.println("Hashed values of nodes ip: " + hash_values);
+        int index = Collections.binarySearch(hash_values, filekey);
 
         System.out.println("Binary search index: " + index);
 
@@ -343,8 +343,8 @@ public class Store {
 
         System.out.println("Store Index for the operation: " + index + "\n");
 
-        nearest_node_ip = this.cluster.get(index).get(0);
-        nearest_node_port = Integer.parseInt(this.cluster.get(index).get(1));
+        nearest_node_ip = availableNodes.get(index).get(0);
+        nearest_node_port = Integer.parseInt(availableNodes.get(index).get(1));
         return Pair.createPair(nearest_node_ip, nearest_node_port);
     }
 
