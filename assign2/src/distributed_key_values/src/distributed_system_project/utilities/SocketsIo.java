@@ -12,7 +12,7 @@ public class SocketsIo {
             BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             String line;
             StringBuilder stringBuilder = new StringBuilder();
-            while (bufferedReader.ready() && (line = bufferedReader.readLine()) != null) {
+            while ((line = bufferedReader.readLine()) != null) {
                 stringBuilder.append(line).append("\n");
                 if(line.equals("end")) break;
             }
