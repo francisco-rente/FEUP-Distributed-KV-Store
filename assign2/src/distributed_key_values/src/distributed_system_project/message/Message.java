@@ -53,7 +53,7 @@ public class Message{
     public String toString(){
         String header = this.operation + " " + this.isTestClient + " " + this.ip + ":" + this.port + "\n\n"; 
         
-        String body = "body:\n " + this.body;
+        String body = "body:\n " + this.body + "\nend";
 
         return header + body;
     }
@@ -63,7 +63,8 @@ public class Message{
         String[] messageSplit = message.split("body:");
         System.out.println("message: " + message);
         String header = messageSplit[0];
-        String body = messageSplit[1];
+        String padded_body = messageSplit[1];
+        String body = padded_body.split("\nend")[0];
 
         System.out.println("BODY: " + body);
 

@@ -1,7 +1,6 @@
 package distributed_system_project;
 
 import distributed_system_project.message.MessageHandler;
-import distributed_system_project.message.MessageHandlerForAsyncSocket;
 
 import java.net.*;
 import java.io.IOException;
@@ -41,6 +40,9 @@ public class StoreTcpServer implements Runnable {
 
 
             while (!executor.isShutdown()) {
+                //TODO: how to close the executor service with a timeout?
+                // executor.shutdown();
+
                 Socket socket = this.tcpServerSocket.accept();
                 
                 System.out.println("Accepted connection from: " + socket.getInetAddress().getHostAddress() + ":" + socket.getPort() + "\n");

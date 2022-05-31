@@ -8,12 +8,19 @@ public class SocketsIo {
 
         //TODO: correct the reader in App class
         try {
+            // socket.setSoTimeout(100000);
             BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             String line;
             StringBuilder stringBuilder = new StringBuilder();
             while (bufferedReader.ready() && (line = bufferedReader.readLine()) != null) {
                 stringBuilder.append(line).append("\n");
+                if(line.equals("end")) break;
             }
+
+            // bufferedReader.close();
+
+            System.out.println("read from socket: " + stringBuilder);
+
             return stringBuilder.toString();
         } catch (IOException e) {
             e.printStackTrace();

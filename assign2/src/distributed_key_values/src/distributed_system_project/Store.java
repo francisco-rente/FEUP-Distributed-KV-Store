@@ -51,15 +51,10 @@ public class Store {
         this.clusterPort = clusterPort;
         this.last32Logs = new PriorityQueue<>();
 
-        try {
-            this.storeId = Encoder.encryptSHA(storeIp);
-        } catch (NoSuchAlgorithmException | UnsupportedEncodingException e1) {
-            // TODO Auto-generated catch block
-            e1.printStackTrace();
-        }
+
+        this.storeId = ShaHasher.getHashString(storeIp);
 
         //Creates Store Id
-
 
         this.folderLocation = "./node_db/" + storeId;
         this.membershipLog = this.folderLocation + "/membership_log.txt";
@@ -197,26 +192,27 @@ public class Store {
 
     public String get(String filekey) {
         try {
-            if (new File(this.folderLocation + "/" + filekey).exists()) {
 
-                byte[] encoded = Files.readAllBytes(Paths.get(this.folderLocation + "/" + filekey));
-                return new String(encoded, StandardCharsets.UTF_8);
+            String file_content;
+            file_content = searchDirectory(filekey);
+            if (file_content != null) return file_content;
 
-            } else {
 
-                Pair<String, Integer> nearest_node = this.getNearestNode(filekey);
+            Pair<String, Integer> nearest_node = this.getNearestNode(filekey);
 
-                if (nearest_node.getElement0().isEmpty()) throw new FileNotFoundException();
+            if (nearest_node.getElement0().equals(this.storeIp) || nearest_node.getElement0().isEmpty())
+                return "NOT_FOUND";
 
-                Message request_message = new Message("get", false,
-                        nearest_node.getElement0(), nearest_node.getElement1(), filekey);
+            Message request_message = new Message("get", false,
+                    this.storeIp, this.storePort, filekey);
 
-                Socket socket = this.sendMessage(request_message);
-                Message response_message = this.getMessage(socket);
+            Socket socket = this.sendMessage(request_message, new Pair<String, Integer>(nearest_node.getElement0(), nearest_node.getElement1()));
+            Message response_message = this.getMessage(socket);
 
-                GetMessageBodyParser parser = new GetMessageBodyParser(response_message.getBody());
-                return parser.parse();
-            }
+            System.out.println("RESPONSE FROM OTHER NODE: " + response_message);
+
+            GetMessageBodyParser parser = new GetMessageBodyParser(response_message.getBody());
+            return parser.parse();
         } catch (IOException e) {
             e.printStackTrace();
             return "FILE_NOT_FOUND_ERROR";
@@ -247,10 +243,9 @@ public class Store {
             if (nearest_node.getElement0().isEmpty()) throw new FileNotFoundException();
 
             Message request_message = new Message("delete", false,
-                    nearest_node.getElement0(), nearest_node.getElement1(), filekey);
-            this.sendMessage(request_message);
+                    this.storeIp, this.storePort, filekey);
 
-            Socket socket = this.sendMessage(request_message);
+            Socket socket = this.sendMessage(request_message, new Pair<String, Integer>(nearest_node.getElement0(), nearest_node.getElement1()));
             Message response_message = this.getMessage(socket);
 
             DeleteMessageBodyParser parser = new DeleteMessageBodyParser(response_message.getBody());
@@ -278,7 +273,7 @@ public class Store {
 
         if (Objects.equals(nearest_node.getElement0(), this.storeIp)) {
             boolean file_exists = new File(this.folderLocation + "/" + filekey).exists();
-            if (file_exists) return "ERROR";
+            if (file_exists) return "SUCCESS";  // return "ERROR";
             Files.write(Paths.get(this.folderLocation + "/" + filekey), value.getBytes(), StandardOpenOption.CREATE);
             return "SUCCESS";
         } else {
@@ -286,8 +281,8 @@ public class Store {
 
             // send the file to the nearest node
             Message request_message = new Message("put", false,
-                    nearest_node.getElement0(), nearest_node.getElement1(), filekey + '\n' + value);
-            Socket socket = this.sendMessage(request_message);
+                    storeIp, storePort, filekey + '\n' + value);
+            Socket socket = this.sendMessage(request_message, new Pair<String, Integer>(nearest_node.getElement0(), nearest_node.getElement1()));
 
             Message response = this.getMessage(socket);
             return response.getBody().equals("ERROR") ? "ERROR" : "SUCCESS";
@@ -299,7 +294,7 @@ public class Store {
         String nodeIp = request_message.getIp();
         int nodePort = request_message.getPort();
 
-        System.out.println("Sending" + request_message.getOperation() + " message to " + nodeIp + ":" + nodePort);
+        System.out.println("Sending " + request_message.getOperation() + " message to " + nodeIp + ":" + nodePort);
         Socket socket = new Socket(nodeIp, nodePort);
 
         SocketsIo.sendStringToSocket(request_message.toString(), socket);
@@ -309,7 +304,7 @@ public class Store {
 
     private Message getMessage(Socket socket) throws IOException {
         String messageString = SocketsIo.readFromSocket(socket);
-        assert messageString != null;
+        System.out.println("getMessage Received message: " + messageString);
         return Message.toObject(messageString);
     }
 
@@ -341,7 +336,7 @@ public class Store {
             if (index == availableNodes.size()) index = 0; // if it overflows, set it to the first node
         }
 
-        System.out.println("Store Index for the operation: " + index + "\n");
+        System.out.println("Store Index for the operation: " + index + " node : " + availableNodes.get(index));
 
         nearest_node_ip = availableNodes.get(index).get(0);
         nearest_node_port = Integer.parseInt(availableNodes.get(index).get(1));
@@ -392,7 +387,8 @@ public class Store {
 
         Store store = new Store(storeIp, storePort, clusterIp, clusterPort);
 
-        while (true) {}
+        while (true) {
+        }
     }
 
 }
