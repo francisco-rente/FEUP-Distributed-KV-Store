@@ -86,12 +86,14 @@ public class App {
         OutputStream output = socket.getOutputStream();
         PrintWriter writer = new PrintWriter(output, true);
         writer.println(message);
+        writer.flush();
 
 
         // wait for response
         System.out.println("Waiting for response");
         String response = SocketsIo.readFromSocket(socket);
         System.out.println("Response: " + response);
+        socket.close();
     }
 }
 

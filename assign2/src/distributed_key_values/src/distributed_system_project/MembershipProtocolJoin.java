@@ -3,6 +3,7 @@ package distributed_system_project;
 import distributed_system_project.Store;
 import distributed_system_project.message.Message;
 import distributed_system_project.message.MessageHandler;
+import distributed_system_project.utilities.SocketsIo;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
@@ -13,6 +14,8 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.List;
 
 public class MembershipProtocolJoin implements Runnable {
 
@@ -21,7 +24,6 @@ public class MembershipProtocolJoin implements Runnable {
     public MembershipProtocolJoin(Store store){
         this.store = store;
     }
-
 
     @Override
     public void run() {
@@ -35,11 +37,13 @@ public class MembershipProtocolJoin implements Runnable {
             DatagramSocket udpSocket = new DatagramSocket();
             //Create message to send
             Message newMessage = new Message("join", false, this.store.getStoreIp(), Store.getMembershipPort(), "");
-            sendUdpMessage(newMessage, udpSocket, ip_adressCluster, this.store.getCluster_port());
+            SocketsIo.sendUdpMessage(newMessage, udpSocket, ip_adressCluster, this.store.getCluster_port());
             
             //Create TcpServer on storeIp and MembershipPort
             ServerSocket tcpServerSocket = new ServerSocket(Store.getMembershipPort(), 10, ip_adressTcp );
             tcpServerSocket.setSoTimeout(Store.getTimeoutTime());
+
+            List<String> store_ips = new ArrayList<String>(); 
             int timeoutCounter = 0;
             int validResponses = 0;
 
@@ -47,16 +51,25 @@ public class MembershipProtocolJoin implements Runnable {
                 try{
                     System.out.println("Waiting for connections...");
                     Socket socket = tcpServerSocket.accept();
-    
-                    MessageHandler messageHandler = new MessageHandler(this.store, socket);
-                    messageHandler.run();
-                    validResponses++;
-                    if(validResponses ==3){
-                        break;
-                    }
 
-    
-                    System.out.println("Received Message");
+                    String messageString = SocketsIo.readFromSocket(socket);
+
+                    Message message =  Message.toObject(messageString);
+                    
+                    if(!store_ips.contains(message.getIp())){
+                        store_ips.add(message.getIp());
+
+                        MessageHandler messageHandler = new MessageHandler(this.store, message);
+                        messageHandler.run();
+                        validResponses++;
+                        if(validResponses ==3){
+                            this.store.startUdpServer();
+                            this.store.startSendingPeriodicMembership();
+                            break;
+                        }
+                        
+                    }
+                    
                 }
                 catch(SocketTimeoutException e){
                     timeoutCounter++;
@@ -65,16 +78,22 @@ public class MembershipProtocolJoin implements Runnable {
                         if(validResponses == 0){
                             store.initializeMembership();
                         }
+                        else{
+                            System.out.println("Entered membership without consensus");
+                            this.store.startUdpServer();
+                            this.store.startSendingPeriodicMembership();
+                        }
                         break;
                     }
 
-                    sendUdpMessage(newMessage, udpSocket, ip_adressCluster, this.store.getCluster_port());
+                    SocketsIo.sendUdpMessage(newMessage, udpSocket, ip_adressCluster, this.store.getCluster_port());
                     
                 }
                 
             }
 
             udpSocket.close();
+            tcpServerSocket.close();
 
 
         } catch (UnknownHostException | SocketException e) {
@@ -87,12 +106,5 @@ public class MembershipProtocolJoin implements Runnable {
 
     }
 
-    private void sendUdpMessage(Message message, DatagramSocket socket,InetAddress ip_adress, int port ) throws IOException{
-
-        byte[] buf = message.toString().getBytes();
-        DatagramPacket packet = new DatagramPacket(buf, buf.length, ip_adress, port);
-
-        socket.send(packet);
-    }
     
 }
