@@ -32,7 +32,7 @@ public enum MessageType {
 
     // convert enum type to string
 
-    public static MessageType getMessageType(Message message, Store store) {
+    public static MessageType getMessageType(Message message) {
 
         switch (message.getOperation()){
             case "join":

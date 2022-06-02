@@ -35,6 +35,7 @@ public class SocketsIo {
             PrintWriter printWriter = new PrintWriter(outputStream, true);
             printWriter.println(response);
             printWriter.flush();
+            // outputStream.close();
         } catch (IOException e) {
             e.printStackTrace();
         }

@@ -7,11 +7,6 @@ import distributed_system_project.Store;
 import distributed_system_project.message.body_parsers.PutMessageBodyParser;
 import distributed_system_project.utilities.SocketsIo;
 
-import java.io.BufferedReader;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.io.PrintWriter;
 import java.io.IOException;
 import java.net.Socket;
 
@@ -71,7 +66,7 @@ public class MessageHandler implements Runnable {
         System.out.println("-----------------\n");
 
         // store the value in the store or in other nodes (if the key is adequate)
-        String status = this.store.put(keyValuePair.getElement0(), keyValuePair.getElement1());
+        String status = this.store.put(keyValuePair.getElement0(), keyValuePair.getElement1(), message.isTestClient());
 
         Message response = new Message("put", false, message.getIp(), message.getPort(),
                 status == null ? "ERROR: File not found" : status);
@@ -88,7 +83,7 @@ public class MessageHandler implements Runnable {
         System.out.println("-----------------\n");
 
         // tombstone the value in the store or in other nodes
-        String status = this.store.delete(key);
+        String status = this.store.delete(key, message.isTestClient());
 
         System.out.println("-----------------\n");
         System.out.println("DELETE STATUS: " + status);
@@ -137,7 +132,7 @@ public class MessageHandler implements Runnable {
                 assert messageString != null;
                 this.message = Message.toObject(messageString);
 
-                MessageType type = MessageType.getMessageType(message, this.store);
+                MessageType type = MessageType.getMessageType(message);
 
                 System.out.println("HANDLING OPERATION : " + message.getOperation() + "\n");
 
