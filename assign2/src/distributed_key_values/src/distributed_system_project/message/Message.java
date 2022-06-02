@@ -32,8 +32,6 @@ public class Message{
 
     public Message(String operation, boolean isTestClient, String ip, int port, String body){
 
-        System.out.println("RECEIVED MESSAGE: " + operation + "\n");
-
         this.operation = operation;
         this.isTestClient = isTestClient;
         this.ip = ip;
@@ -46,26 +44,24 @@ public class Message{
         this.isTestClient = false;
         this.ip = "";
         this.port = 0;
-        this.body = "";
+        this.body = null;
     }
 
     @Override
     public String toString(){
         String header = this.operation + " " + this.isTestClient + " " + this.ip + ":" + this.port + "\n\n"; 
         
-        String body = "body:\n " + this.body;
+        String body = "body:\n" + this.body;
 
-        return header + body;
+        return header + body + "\nend";
     }
 
     public static Message toObject(String message){
         //create a Message object from the string
         String[] messageSplit = message.split("body:");
-        System.out.println("message: " + message);
         String header = messageSplit[0];
-        String body = messageSplit[1];
+        String body = messageSplit[1].split("\n\n")[0];
 
-        System.out.println("BODY: " + body);
 
         // split header trimming newline characters
         String[] headerSplit = header.split(" ");
@@ -76,7 +72,7 @@ public class Message{
         }
 
         String operation = headerSplit[0];
-        System.out.println("operation: " + operation);
+
 
 
         String isTestClient = headerSplit[1];

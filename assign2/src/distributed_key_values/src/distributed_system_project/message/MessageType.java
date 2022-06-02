@@ -8,7 +8,8 @@ public enum MessageType {
     LEAVE,
     GET,
     PUT,
-    DELETE, 
+    DELETE,
+    MEMBERSHIP, 
     UNKNOWN;
 
 
@@ -28,6 +29,8 @@ public enum MessageType {
                 return PUT;
             case "delete":
                 return DELETE;
+            case "membership":
+                return MEMBERSHIP;
             default:
                 return UNKNOWN;
         }

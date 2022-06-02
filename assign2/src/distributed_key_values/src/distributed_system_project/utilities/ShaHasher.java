@@ -12,6 +12,7 @@ public abstract class ShaHasher {
 
     public static String getHashString(String input) {
         try {
+            System.out.println(input);
             MessageDigest md = MessageDigest.getInstance("SHA-256");
             md.update(input.getBytes());
             byte[] digest = md.digest();

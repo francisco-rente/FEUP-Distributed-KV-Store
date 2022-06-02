@@ -2,7 +2,9 @@ package distributed_system_project.message;
 
 import distributed_system_project.message.body_parsers.DeleteMessageBodyParser;
 import distributed_system_project.message.body_parsers.GetMessageBodyParser;
+import distributed_system_project.message.body_parsers.MembershipBodyParser;
 import distributed_system_project.utilities.Pair;
+import distributed_system_project.FileSystem;
 import distributed_system_project.Store;
 import distributed_system_project.message.body_parsers.PutMessageBodyParser;
 import distributed_system_project.utilities.SocketsIo;
@@ -14,6 +16,9 @@ import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.io.IOException;
 import java.net.Socket;
+import java.util.ArrayList;
+import java.util.List;
+
 
 
 public class MessageHandler implements Runnable {
@@ -105,21 +110,82 @@ public class MessageHandler implements Runnable {
     public void handleJoinOperation(Message message) {
         //Create socket to send message
         if(message.isTestClient()){
+            if(this.store.getMembershipCounter() %2 == 0){
+                SocketsIo.sendStringToSocket("Already on cluster", socket);
+                return;
+            }
             store.join();
 
         }else{
-
-            System.out.println(message);
+            
             //Add store to cluster
-            this.store.addStoreToCluster(message.getIp(), Store.getStartingMembershipCounter());
+            this.store.updateStoreToCluster(message.getIp(), Store.UPDATE_CLUSTER_JOIN);
 
-            String body = "";
-            Message send = new Message("membership", false, message.getIp(), message.getPort(), body );
+            //Compose body (List of clusterMembers and last32logs)
+            String body = this.store.convertMembershipToString(false);
+            
+            
+            //TODO create message and send it
+            Message send = new Message("membership", false, this.store.getStoreIp(), message.getPort(), body );
+            
+            try {
+                Socket socket = new Socket(this.message.getIp(), message.getPort());
+                SocketsIo.sendStringToSocket( send.toString(), socket );
+            } catch (IOException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+            
+            
         }
 
     }
 
+
+    public void handleMembershipOperation(Message message) {
+        MembershipBodyParser membershipBodyParser = new MembershipBodyParser(message.getBody());
+
+        Pair<List<String>, List<String>> membership = membershipBodyParser.parse();
+
+        List<ArrayList<String>> members =new ArrayList<>();
+
+        for(String storeString : membership.getElement0()){
+            ArrayList<String> storeInfo = new ArrayList<>();
+            String[] storeStringInfo = storeString.trim().split(" ");
+            storeInfo.add(storeStringInfo[0]);
+            storeInfo.add(storeStringInfo[1]);
+            
+            members.add(storeInfo);
+
+        }
+
+        for(String log: membership.getElement1()){
+            this.store.addLog(log);
+        }
+
+        this.store.startSendingPeriodicMembership();
+
+    }
+
+
     public void handleLeaveOperation(Message message) {
+        if(message.isTestClient()){
+
+            if(this.store.getMembershipCounter() %2 == 1){
+                SocketsIo.sendStringToSocket("Already on out of cluster", socket);
+                return;
+            }
+
+            this.store.leave();
+            //Prepares the leave operation and send leave message
+        }
+        else{
+            //Receives leave message from leaver
+
+            //Atualizar logs e cluster
+            this.store.updateStoreToCluster(message.getIp(), Store.UPDATE_CLUSTER_LEAVE);            
+
+        }
 
     }
 
@@ -134,7 +200,7 @@ public class MessageHandler implements Runnable {
                 String messageString =  SocketsIo.readFromSocket(this.socket);
                 System.out.println("RECEIVED MESSAGE: " + messageString + "\n");
 
-                assert messageString != null;
+                //assert messageString != null;
                 this.message = Message.toObject(messageString);
 
                 MessageType type = MessageType.getMessageType(message, this.store);
@@ -158,18 +224,58 @@ public class MessageHandler implements Runnable {
                     case LEAVE:
                         this.handleLeaveOperation(this.message);
                         break;
+                    case MEMBERSHIP:
+                        this.handleMembershipOperation(this.message);
+                        break;
                     case UNKNOWN:
                         break;
                 }
-                this.socket.close();
 
             } catch (IOException e) {
                 e.printStackTrace();
             }
         } else{
-            this.handleJoinOperation(this.message);
+            MessageType type = MessageType.getMessageType(message, this.store);
+
+            System.out.println("HANDLING OPERATION : " + message.getOperation() + "\n");
+
+            // TODO discover header type
+            switch (type) {
+                case GET:
+                    try {
+                        this.handleGetOperation(this.message);
+                    } catch (IOException e) {
+                        // TODO Auto-generated catch block
+                        e.printStackTrace();
+                    }
+                    break;
+                case PUT:
+                    try {
+                        this.handlePutOperation(this.message);
+                    } catch (IOException e) {
+                        // TODO Auto-generated catch block
+                        e.printStackTrace();
+                    }
+                    break;
+                case DELETE:
+                    this.handleDeleteOperation(this.message);
+                    break;
+                case JOIN:
+                    this.handleJoinOperation(this.message);
+                    break;
+                case LEAVE:
+                    this.handleLeaveOperation(this.message);
+                    break;
+                case MEMBERSHIP:
+                    this.handleMembershipOperation(this.message);
+                    break;
+                case UNKNOWN:
+                    break;
+            }
         }
     }
+
+
 
     public void closeSocket(){
         try {

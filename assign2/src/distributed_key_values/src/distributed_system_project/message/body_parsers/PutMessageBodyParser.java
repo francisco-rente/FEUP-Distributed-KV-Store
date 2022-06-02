@@ -1,7 +1,7 @@
 package distributed_system_project.message.body_parsers;
 import distributed_system_project.utilities.Pair;
 
-public class PutMessageBodyParser extends MessageBodyParser<Pair<String, String>> {
+public class PutMessageBodyParser extends MessageBodyParser <Pair<String, String>> {
 
     public PutMessageBodyParser(String message_body) {
         super(message_body);

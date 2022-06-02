@@ -52,6 +52,11 @@ public class StoreUdpServer implements Runnable {
                 System.out.println("waiting for udp Connections");
                 DatagramPacket packet = new DatagramPacket(rbuf, rbuf.length, ip_address, clusterPort);
 
+                if(Thread.currentThread().isInterrupted()){
+                    //Only way to close the udp connection
+                    break;
+                }
+
                 packet = new DatagramPacket(rbuf, rbuf.length);
                 udpServeDatagramSocket.receive(packet);
                 String messageReceived = new String(packet.getData(), 0, packet.getLength());
@@ -68,6 +73,8 @@ public class StoreUdpServer implements Runnable {
                 }
 
             }
+
+            this.udpServeDatagramSocket.close();
 
         } catch (UnknownHostException e) {
             // TODO Auto-generated catch block
