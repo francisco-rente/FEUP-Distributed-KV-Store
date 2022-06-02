@@ -232,35 +232,38 @@ public class Store {
 
      */
 
-    public String get(String filekey) {
+    public String get(String filekey, boolean isTestClient) {
 
         System.out.println("ASKING FOR FILE: " + filekey);
 
         // Search for the file in this store
         String file_content;
         file_content = searchDirectory(filekey);
-        if (file_content.equals(MessageCodes.FILE_NOT_FOUND)) return file_content;
+        if (!file_content.equals(MessageCodes.FILE_NOT_FOUND) && !file_content.equals(MessageCodes.ERROR_CONNECTING))
+            return file_content;
 
+        // If I'm not the first to be contacted, another node as already asked me and the owner/other replicas
+        if (!isTestClient) return MessageCodes.FILE_NOT_FOUND;
 
         // Search for the file in the cluster
         Pair<String, Integer> nearest_node = this.getNearestNodeForKey(filekey);
 
         Message request_message = new Message(MessageType.GET.toString(), false,
                 this.storeIp, this.storePort, filekey);
+        String response_string;
 
-
-        String response_string = this.sendGetRequest(request_message,
-                new Pair<>(nearest_node.getElement0(), this.storePort));
-        if (!response_string.equals(MessageCodes.ERROR_CONNECTING) && !response_string.equals("NOT_FOUND"))
-            return response_string;
+        if (!nearest_node.getElement0().equals(this.storeIp)) { // Prevent loop back
+            response_string = this.sendGetRequest(request_message,
+                    new Pair<>(nearest_node.getElement0(), this.storePort));
+            if (wasGetSuccessful(response_string)) return response_string;
+        }
 
         // Try its replicas if it's not found
         List<Pair<String, Integer>> replicas = this.getStoreReplicas(nearest_node.getElement0());
-
         for (Pair<String, Integer> replica : replicas) {
             if (replica.getElement0().equals(this.storeIp)) continue; // cannot loop the request to myself
             response_string = this.sendGetRequest(request_message, replica);
-            if (response_string != null && !response_string.equals("NOT_FOUND")) return response_string;
+            if (wasGetSuccessful(response_string)) return response_string;
         }
 
         return MessageCodes.GET_FAIL;
@@ -280,7 +283,7 @@ public class Store {
                 return MessageCodes.FILE_NOT_FOUND;
             deleteFile(filekey);
             // If the request is not from a test client, we don't need to alert the other replicas
-            if (!isTestClient) return MessageCodes.FILE_DELETED;
+            if (!isTestClient) return MessageCodes.DELETE_SUCCESS;
         }
 
         replicas.add(nearest_node); // send the request to the owner and its replicas
@@ -291,7 +294,7 @@ public class Store {
             if (response_string.equals(MessageCodes.FILE_NOT_FOUND)) success = false;
         }
 
-        return success ? MessageCodes.DELETE_SUCCESS : MessageCodes.ERROR_CONNECTING;
+        return success ? MessageCodes.DELETE_SUCCESS : MessageCodes.DELETE_FAIL;
 
     }
 
@@ -309,16 +312,21 @@ public class Store {
             //TODO: Doubt, should I continue even if I can't save it myself if I'm the owner?
             // Should I signal for a Rollback?
             // TRY AGAIN IF FAILURE?
-            if (saveFile(filekey, value).equals(MessageCodes.ERROR_SAVING_FILE)) success = false;
+
+            String saveStatus = saveFile(filekey, value);
+            if(saveStatus.equals(MessageCodes.ERROR_SAVING_FILE)) success = false;
+            // if(saveStatus.equals(MessageCodes.FILE_EXISTS)) return MessageCodes.FILE_EXISTS;
             if (!isTestClient) return MessageCodes.PUT_SUCCESS;
         }
+
+        System.out.println("Sending put request to " + replicas + "\n");
 
         replicas.add(nearest_node); // send the request to the owner and its replicas
         for (Pair<String, Integer> replica : replicas) {
             if (replica.getElement0().equals(this.storeIp)) continue; // cannot loop the request to myself
             String response_string = this.sendPutRequest(new Message("put", false,
                     storeIp, storePort, filekey + '\n' + value), replica);
-            if (response_string.equals(MessageCodes.PUT_FAIL)) success = false;
+            if (!wasPutSuccessful(response_string)) success = false;
         }
 
         return success ? MessageCodes.PUT_SUCCESS : MessageCodes.ERROR_CONNECTING;
@@ -335,27 +343,50 @@ public class Store {
      */
 
 
+    public boolean wasGetSuccessful(String responseString) {
+        return responseString != null && !responseString.equals(MessageCodes.ERROR_CONNECTING)
+                && !responseString.equals(MessageCodes.FILE_NOT_FOUND) &&
+                !responseString.equals(MessageCodes.GET_FAIL);
+    }
+
+
+    public boolean wasPutSuccessful(String responseString) {
+        return responseString != null && !responseString.equals(MessageCodes.ERROR_CONNECTING)
+                && !responseString.equals(MessageCodes.FILE_NOT_FOUND) &&
+                !responseString.equals(MessageCodes.PUT_FAIL);
+        // return responseString != null && responseString.equals(MessageCodes.PUT_SUCCESS);
+    }
+
+    public boolean wasDeleteSuccessfull(String responseString) {
+        return responseString != null && !responseString.equals(MessageCodes.ERROR_CONNECTING)
+                && !responseString.equals(MessageCodes.FILE_NOT_FOUND) &&
+                !responseString.equals(MessageCodes.DELETE_FAIL);
+        // return responseString != null && responseString.equals(MessageCodes.DELETE_SUCCESS);
+    }
+
+
     String sendGetRequest(Message request_message, Pair<String, Integer> node) {
         Message response_message = sendMessageAndWaitResponse(request_message, node);
-        if (request_message == null) return MessageCodes.ERROR_CONNECTING;
+        if (response_message == null) return MessageCodes.ERROR_CONNECTING;
 
         String response_body = new GetMessageBodyParser(response_message.getBody()).parse();
-        if (!response_body.equals(MessageCodes.GET_FAIL)) return response_body;
+        if (!response_body.equals(MessageCodes.GET_FAIL)) return response_body; //TODO: should FILE_EXISTS be a success
         return MessageCodes.FILE_NOT_FOUND;
     }
 
     private String sendPutRequest(Message request_message, Pair<String, Integer> store) {
         Message response_message = sendMessageAndWaitResponse(request_message, store);
-        if (request_message == null) return MessageCodes.ERROR_CONNECTING;
+        if (response_message == null) return MessageCodes.ERROR_CONNECTING;
 
         String response_body = new PutMessageBodyParser(response_message.getBody()).parseResponseToRequest();
-        if (response_body.equals(MessageCodes.PUT_SUCCESS)) return response_body;
+        if (response_body.equals(MessageCodes.PUT_SUCCESS)) // || response_body.equals(MessageCodes.FILE_EXISTS))
+            return response_body;
         return MessageCodes.PUT_FAIL;
     }
 
     String sendDeleteRequest(Message request_message, Pair<String, Integer> node) {
         Message response_message = sendMessageAndWaitResponse(request_message, node);
-        if (request_message == null) return MessageCodes.ERROR_CONNECTING;
+        if (response_message == null) return MessageCodes.ERROR_CONNECTING;
 
         String response_body = new DeleteMessageBodyParser(response_message.getBody()).parseResponseToRequest();
         if (response_body.equals(MessageCodes.DELETE_SUCCESS)) return response_body;
@@ -367,7 +398,12 @@ public class Store {
         Socket socket;
         socket = this.sendMessage(message, node);
         if (socket == null) return null;
-        return this.getMessage(socket);
+        Message response = this.getMessage(socket);
+        try {
+            socket.close();
+        } catch (IOException ignored) {
+        }
+        return response;
     }
 
     private Socket sendMessage(Message request_message, Pair<String, Integer> storeInfo) {
@@ -377,11 +413,11 @@ public class Store {
         System.out.println("Sending " + request_message.getOperation() + " message to " + nodeIp + ":" + nodePort);
         try {
             Socket socket = new Socket(nodeIp, nodePort); //TODO: Should this be a new thread?
-            socket.setSoTimeout(5000);
+            socket.setSoTimeout(10000);
             SocketsIo.sendStringToSocket(request_message.toString(), socket);
             return socket;
         } catch (IOException e) {
-            e.printStackTrace();
+            System.out.println("Error connecting to " + nodeIp + ":" + nodePort);
             return null;
         }
     }
@@ -389,9 +425,8 @@ public class Store {
 
     private Message getMessage(Socket socket) {
         try {
-            socket.setSoTimeout(5000);
+            socket.setSoTimeout(10000);
             String messageString = SocketsIo.readFromSocket(socket);
-            System.out.println("getMessage Received message: " + messageString);
             assert messageString != null;
             return Message.toObject(messageString);
         } catch (SocketException e) {
@@ -426,7 +461,7 @@ public class Store {
 
     String searchDirectory(String filekey) {
         if (!new File(this.folderLocation + "/" + filekey).exists()) return MessageCodes.FILE_NOT_FOUND;
-        byte[] encoded = new byte[0];
+        byte[] encoded;
         try {
             encoded = Files.readAllBytes(Paths.get(this.folderLocation + "/" + filekey));
         } catch (IOException e) {
@@ -452,12 +487,13 @@ public class Store {
             return MessageCodes.PUT_SUCCESS;
         } catch (IOException e) {
             e.printStackTrace();
+            //TODO: RETRY 2 more times
             return MessageCodes.ERROR_SAVING_FILE;
         }
     }
 
 
-    ArrayList<String> getFiles() {
+    ArrayList<String> getNonDeletedFiles() {
         ArrayList<String> files = new ArrayList<>();
         File folder = new File(this.folderLocation);
         for (File file : Objects.requireNonNull(folder.listFiles())) {
@@ -517,7 +553,7 @@ public class Store {
         ArrayList<String> files_to_be_moved = new ArrayList<>();
         String hash_of_new_node = ShaHasher.getHashString(new_node_ip);
 
-        ArrayList<String> files = this.getFiles();
+        ArrayList<String> files = this.getNonDeletedFiles();
         Collections.sort(files);
 
         int index = Collections.binarySearch(files, hash_of_new_node);
@@ -557,7 +593,6 @@ public class Store {
         List<String> hash_values = node_ips.stream().map(ShaHasher::getHashString).collect(Collectors.toList());
 
         // print hashed values of nodes ip
-        System.out.println("Hashed values of nodes ip: " + hash_values);
         int index = Collections.binarySearch(hash_values, filekey);
 
         System.out.println("Binary search index: " + index);
@@ -566,6 +601,8 @@ public class Store {
             index = -index - 1; // revert the negative index
             if (index == availableNodes.size()) index = 0; // if it overflows, set it to the first node
         }
+        System.out.println("Binary search index: " + index);
+
         return index;
     }
 
@@ -621,7 +658,7 @@ public class Store {
         if (!predecessorsIps.contains(this.storeIp) && !sucessorsIps.contains(this.storeIp))
             return MessageCodes.UPDATED_WITH_JOIN; // If I'm not in it exit
 
-        ArrayList<String> files = getFiles();
+        ArrayList<String> files = getNonDeletedFiles();
 
         for (String filekey : files) {
             List<String> preferenceListIps = this.getPreferenceList(filekey); // get the list of stores in charge

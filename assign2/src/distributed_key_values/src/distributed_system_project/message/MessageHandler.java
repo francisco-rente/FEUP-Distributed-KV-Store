@@ -44,10 +44,10 @@ public class MessageHandler implements Runnable {
         System.out.println("-----------------\n");
 
         // obtain value from store or from other nodes
-        String value = this.store.get(key);
+        String value = this.store.get(key, message.isTestClient());
 
         Message response = new Message("get", false, message.getIp(), message.getPort(),
-                (value == null) ? "ERROR: File not found" : value);
+                (value == null) ? MessageCodes.FILE_NOT_FOUND : value);
 
         System.out.println("-----------------\n");
         System.out.println("Sending Get Response: " + response);
@@ -84,10 +84,6 @@ public class MessageHandler implements Runnable {
 
         // tombstone the value in the store or in other nodes
         String status = this.store.delete(key, message.isTestClient());
-
-        System.out.println("-----------------\n");
-        System.out.println("DELETE STATUS: " + status);
-        System.out.println("-----------------\n");
 
         Message response = new Message("delete", false, message.getIp(),
                 message.getPort(), status);

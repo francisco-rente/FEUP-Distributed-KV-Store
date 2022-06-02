@@ -16,17 +16,17 @@ public enum MessageType {
     public String toString() {
         switch (this) {
             case JOIN:
-                return "JOIN";
+                return "join";
             case LEAVE:
-                return "LEAVE";
+                return "leave";
             case GET:
-                return "GET";
+                return "get";
             case PUT:
-                return "PUT";
+                return "put";
             case DELETE:
-                return "DELETE";
+                return "delete";
             default:
-                return "UNKNOWN";
+                return "unknown";
         }
     }
 
