@@ -1,11 +1,15 @@
 package distributed_system_project;
 
 import distributed_system_project.message.Message;
+import distributed_system_project.message.MessageCodes;
 import distributed_system_project.utilities.ShaHasher;
 import distributed_system_project.utilities.SocketsIo;
 
 import java.io.*;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Scanner;
 
 // import FileUtils
@@ -40,9 +44,12 @@ public class App {
         if (operation.equals("put")) {
             // get sufix from file path in args[2]
             String filePath = args[2];
-            String fileName = filePath.substring(filePath.lastIndexOf("/") + 1);
 
-            final String key = ShaHasher.getHashString(fileName);
+            if (!new File(filePath).exists()) throw new FileNotFoundException();
+            byte[] encoded = Files.readAllBytes(Paths.get(filePath));
+            String fileContent = new String(encoded, StandardCharsets.UTF_8);
+
+            final String key = ShaHasher.getHashString(fileContent);
             System.out.println("fileKey: " + key);
             // read file content using Scanner
             bodyString.append(key).append("\n");
