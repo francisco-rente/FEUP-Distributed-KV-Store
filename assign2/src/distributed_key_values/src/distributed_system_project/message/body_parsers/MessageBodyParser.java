@@ -15,4 +15,6 @@ public abstract class MessageBodyParser <T>{
         return this.message_body;
     }
 
+    public String parseResponseToRequest() {return this.message_body.trim(); }
+
 }

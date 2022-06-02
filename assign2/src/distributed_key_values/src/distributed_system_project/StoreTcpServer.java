@@ -13,7 +13,7 @@ import java.util.concurrent.TimeUnit;
 
 public class StoreTcpServer implements Runnable {
 
-    private static final long THREAD_TIMEOUT = 100;
+    private static final long THREAD_TIMEOUT = 1000;
     private static final int THREADS_IN_POOL = 8;
 
     private final String storeIp;

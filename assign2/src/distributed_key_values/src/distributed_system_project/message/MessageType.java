@@ -12,6 +12,23 @@ public enum MessageType {
     UNKNOWN;
 
 
+    @Override
+    public String toString() {
+        switch (this) {
+            case JOIN:
+                return "JOIN";
+            case LEAVE:
+                return "LEAVE";
+            case GET:
+                return "GET";
+            case PUT:
+                return "PUT";
+            case DELETE:
+                return "DELETE";
+            default:
+                return "UNKNOWN";
+        }
+    }
 
     // convert enum type to string
 
