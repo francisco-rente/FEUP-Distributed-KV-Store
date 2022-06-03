@@ -13,7 +13,7 @@ public class SocketsIo {
 
         //TODO: correct the reader in App class
         try {
-            // socket.setSoTimeout(100000);
+            // TODO: socket.setSoTimeout(100000);
             BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             String line;
             StringBuilder stringBuilder = new StringBuilder();

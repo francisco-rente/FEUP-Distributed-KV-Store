@@ -59,24 +59,14 @@ public class Message{
     public static Message toObject(String message){
         //create a Message object from the string
         String[] messageSplit = message.split("body:");
-        System.out.println("message: " + message);
         String header = messageSplit[0];
         String padded_body = messageSplit[1];
         String body = padded_body.split("\nend")[0];
 
-        System.out.println("BODY: " + body);
-
         // split header trimming newline characters
         String[] headerSplit = header.split(" ");
 
-        // print header
-        for(String s : headerSplit){
-            System.out.println(s);
-        }
-
         String operation = headerSplit[0];
-
-
 
         String isTestClient = headerSplit[1];
         String ipPort = headerSplit[2];

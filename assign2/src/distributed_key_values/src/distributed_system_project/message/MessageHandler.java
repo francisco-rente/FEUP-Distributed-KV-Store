@@ -4,7 +4,6 @@ import distributed_system_project.message.body_parsers.DeleteMessageBodyParser;
 import distributed_system_project.message.body_parsers.GetMessageBodyParser;
 import distributed_system_project.message.body_parsers.MembershipBodyParser;
 import distributed_system_project.utilities.Pair;
-import distributed_system_project.FileSystem;
 import distributed_system_project.Store;
 import distributed_system_project.message.body_parsers.PutMessageBodyParser;
 import distributed_system_project.utilities.SocketsIo;
@@ -53,10 +52,6 @@ public class MessageHandler implements Runnable {
 
         Message response = new Message("get", false, message.getIp(), message.getPort(),
                 (value == null) ? MessageCodes.FILE_NOT_FOUND : value);
-
-        System.out.println("-----------------\n");
-        System.out.println("Sending Get Response: " + response);
-        System.out.println("-----------------\n");
 
         SocketsIo.sendStringToSocket(response.toString(), this.socket);
     }

@@ -58,8 +58,6 @@ public class App {
                 bodyString.append(scanner.nextLine());
             }
             scanner.close();
-
-            System.out.println("bodyString: " + bodyString);
         }
 
         if (operation.equals("delete") || operation.equals("get")) {
@@ -72,15 +70,13 @@ public class App {
         Message message = new Message(operation, true, nodeIp, nodePort, bodyString.toString());
 
         System.out.println("Creating Socket to node: " + nodeIp + ":" + nodePort);
-        System.out.println("Sending message:------------ \n" + message + "\n-----------------");
+        System.out.println("Sending message:\n------------ \n" + message + "\n-----------------");
         Socket socket = new Socket(nodeIp, nodePort);
 
-        System.out.println("Creating OutputStream");
         OutputStream output = socket.getOutputStream();
         PrintWriter writer = new PrintWriter(output, true);
         writer.println(message);
         writer.flush();
-
 
         // wait for response
         System.out.println("Waiting for response");

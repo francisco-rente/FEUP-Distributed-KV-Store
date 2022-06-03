@@ -339,6 +339,7 @@ public class Store {
 
         // Try its replicas if it's not found
         List<Pair<String, Integer>> replicas = this.getStoreReplicas(nearest_node.getElement0());
+        System.out.println("REPLICAS: " + replicas.stream().map(Pair::getElement0).collect(Collectors.toList()));
         for (Pair<String, Integer> replica : replicas) {
             if (replica.getElement0().equals(this.storeIp)) continue; // cannot loop the request to myself
             response_string = this.sendGetRequest(request_message, replica);
@@ -352,6 +353,9 @@ public class Store {
     public String delete(String filekey, boolean isTestClient) {
         Pair<String, Integer> nearest_node = this.getNearestNodeForKey(filekey);
         List<Pair<String, Integer>> replicas = this.getStoreReplicas(nearest_node.getElement0());
+
+        System.out.println("REPLICAS: " + replicas.stream().map(Pair::getElement0).collect(Collectors.toList()));
+
 
         boolean success = true;
 
@@ -400,8 +404,6 @@ public class Store {
             // if(saveStatus.equals(MessageCodes.FILE_EXISTS)) return MessageCodes.FILE_EXISTS;
             if (!isTestClient) return MessageCodes.PUT_SUCCESS;
         }
-
-        System.out.println("Sending put request to " + replicas + "\n");
 
         replicas.add(nearest_node); // send the request to the owner and its replicas
         for (Pair<String, Integer> replica : replicas) {
@@ -613,17 +615,18 @@ public class Store {
         // TODO: sort abuse
         List<ArrayList<String>> sortedCluster = sortCluster();
         int index = this.getNodePosition(sortedCluster, ip_hash);
-        System.out.println("NODE POS: " + index);
+        // System.out.println("NODE POS: " + index);
 
         for (int i = 1; i <= 2; ++i) {
             // if (i < 0) i = sortedCluster.size() - 1;
             int replica_index = (index - i) % sortedCluster.size();
             if (replica_index < 0) replica_index += sortedCluster.size();
+            // TODO: if(replica_index == index) continue;
             ArrayList<String> replica_node = sortedCluster.get(replica_index);
             replicas.add(new Pair<>(replica_node.get(0), this.storePort));
         }
 
-        System.out.println("FOUND REPLICAS: " + replicas);
+        // System.out.println("FOUND REPLICAS: " + replicas);
 
         return replicas.stream().distinct().collect(Collectors.toList());
     }
@@ -688,13 +691,11 @@ public class Store {
         // print hashed values of nodes ip
         int index = Collections.binarySearch(hash_values, filekey);
 
-        System.out.println("Binary search index: " + index);
 
         if (index < 0) {
             index = -index - 1; // revert the negative index
             if (index == availableNodes.size()) index = 0; // if it overflows, set it to the first node
         }
-        System.out.println("Binary search index: " + index);
 
         return index;
     }
@@ -800,11 +801,11 @@ public class Store {
 
         // get successors
         List<String> successors = this.getSucessors(newStoreIp);
-        System.out.println("Successors: " + successors);
+        //System.out.println("Successors: " + successors);
 
         // get predecessors
         List<String> predecessors = this.getPredecessors(newStoreIp);
-        System.out.println("Predecessors: " + predecessors);
+        // System.out.println("Predecessors: " + predecessors);
 
         // If I am not successor and not a predecessor, leave
         if (!successors.contains(this.storeIp) && !predecessors.contains(this.storeIp))
