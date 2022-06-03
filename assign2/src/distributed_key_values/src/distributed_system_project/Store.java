@@ -370,7 +370,7 @@ public class Store {
             if (replica.getElement0().equals(this.storeIp)) continue; // cannot loop the request to myself
             String response_string = this.sendDeleteRequest(new Message("delete", false,
                     this.storeIp, this.storePort, filekey), replica);
-            if (response_string.equals(MessageCodes.FILE_NOT_FOUND)) success = false;
+            if (!wasDeleteSuccessfull(response_string)) success = false;
         }
 
         return success ? MessageCodes.DELETE_SUCCESS : MessageCodes.DELETE_FAIL;
@@ -755,7 +755,7 @@ public class Store {
     }
 
 
-    private String  purgeFiles() {
+    private String purgeFiles() {
         // for each non deleted file, check if my storeIp is in the preference list
         List<String> myFiles = this.getNonDeletedFiles();
         for (String file : myFiles) {
