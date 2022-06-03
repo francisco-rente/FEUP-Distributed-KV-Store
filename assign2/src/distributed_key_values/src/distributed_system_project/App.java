@@ -64,14 +64,7 @@ public class App {
 
         if (operation.equals("delete") || operation.equals("get")) {
             // get key from args[3]3
-            String filePath = args[2];
-            if (!new File(filePath).exists()) throw new FileNotFoundException();
-            byte[] encoded = Files.readAllBytes(Paths.get(filePath));
-            String fileContent = new String(encoded, StandardCharsets.UTF_8);
-
-            System.out.println("fileContent: " + fileContent);
-
-            final String key = ShaHasher.getHashString(fileContent);
+            final String key = args[2];
             System.out.println("key: " + key);
             bodyString = new StringBuilder(key);
         }
