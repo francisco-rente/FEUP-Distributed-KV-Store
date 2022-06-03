@@ -1,7 +1,6 @@
 package distributed_system_project;
 
 import distributed_system_project.message.Message;
-import distributed_system_project.message.MessageCodes;
 import distributed_system_project.utilities.ShaHasher;
 import distributed_system_project.utilities.SocketsIo;
 
@@ -15,7 +14,7 @@ import java.util.Scanner;
 // import FileUtils
 
 
-public class App {
+public class TestClient {
     public static void main(String[] args) throws Exception {
         if (args.length < 2 || args.length > 4) {
             System.out.println(
