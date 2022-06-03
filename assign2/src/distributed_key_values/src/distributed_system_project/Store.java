@@ -3,7 +3,6 @@ package distributed_system_project;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.DatagramSocket;
@@ -98,7 +97,7 @@ public class Store {
 
         //In case of crash and if this store was in cluster
         //It will start with udp server on and
-        if(this.getMembershipCounter()%2 ==0){
+        if (this.getMembershipCounter() % 2 == 0) {
             this.startUdpServer();
         }
 
@@ -113,14 +112,14 @@ public class Store {
      * Reads from the memebersip log file the membership information and stores it on the field last32Logs
      * If such file is not found, it will create a new one
      */
-    private void readClusterInformationFromLog(){
+    private void readClusterInformationFromLog() {
         File file = new File(this.membershipLog);
 
         try {
-            if(!file.createNewFile()){
+            if (!file.createNewFile()) {
                 FileInputStream fis = new FileInputStream(file);
                 BufferedReader br = new BufferedReader(new InputStreamReader(fis));
-                for(String tmp; (tmp = br.readLine()) != null;){
+                for (String tmp; (tmp = br.readLine()) != null; ) {
                     addLog(tmp);
                 }
 
@@ -154,17 +153,18 @@ public class Store {
     /**
      * Overwrites the membership log with the current cluster information
      */
-    private void writeLogs(){
+    private void writeLogs() {
         FileSystem.writeTextOnFile(this.membershipLog, this.last32Logs);
     }
 
     /**
      * Adds a new membership log to the last32Logs
+     *
      * @param last32Logs
      */
     public void setLast32Logs(List<String> last32Logs) {
 
-        for(String log : this.last32Logs){
+        for (String log : this.last32Logs) {
             this.addLog(log);
         }
     }
@@ -173,20 +173,23 @@ public class Store {
      * Adds a log to the last32Logs
      * In case a log of such store ip already exists, it is replaced
      * This function changes the membership log and cluster
+     *
      * @param log
      */
     public void addLog(String log) {
 
         boolean changedLog = false;
         String[] logInfo = log.split(" ");
-        for(int i = 0; i< this.last32Logs.size(); i++){
+        for (int i = 0; i < this.last32Logs.size(); i++) {
             String[] tmpInfo = this.last32Logs.get(i).split(" ");
 
             //If exists already on list, ends here
-            if(log.equals(this.last32Logs.get(i))){return;}
+            if (log.equals(this.last32Logs.get(i))) {
+                return;
+            }
 
             //If already has info on list but membership is different
-            if(logInfo[0].equals(tmpInfo[0]) && !logInfo[1].equals(tmpInfo[1])){
+            if (logInfo[0].equals(tmpInfo[0]) && !logInfo[1].equals(tmpInfo[1])) {
                 String newLog = logInfo[0] + " " + Math.max(Integer.parseInt(tmpInfo[1]), Integer.parseInt(logInfo[1]));
                 this.last32Logs.set(i, newLog);
                 changedLog = true;
@@ -197,18 +200,18 @@ public class Store {
         }
 
         //If not there, adds to the log
-        if(!changedLog)last32Logs.add(log);
+        if (!changedLog) last32Logs.add(log);
         this.createClusterFromLogs();
         this.writeLogs();
     }
 
 
-    public int getMembershipCounter(){
+    public int getMembershipCounter() {
         int count = -1;
 
-        for(String log : this.last32Logs){
+        for (String log : this.last32Logs) {
             List<String> tmpLog = FileSystem.logToInfo(log);
-            if(tmpLog.get(0).equals(this.storeIp)){
+            if (tmpLog.get(0).equals(this.storeIp)) {
                 count = Integer.parseInt(tmpLog.get(1));
             }
         }
@@ -251,23 +254,24 @@ public class Store {
         return cluster;
     }
 
-    public void setClusterNodes( List<ArrayList<String>> cluster ) {
+    public void setClusterNodes(List<ArrayList<String>> cluster) {
         this.cluster = cluster;
     }
 
     /**
      * Updates the mmebership information of the store which ip is storeIp
-     * @param storeIp The ip address of the store
+     *
+     * @param storeIp     The ip address of the store
      * @param joinOrLeave If the store is entering or leaving the cluster. If variable is 0 it is joining, if it is 1 it is leaving
      */
     public void updateStoreToCluster(String storeIp, int joinOrLeave) {
 
-        for(int i = 0; i< last32Logs.size(); i++){
+        for (int i = 0; i < last32Logs.size(); i++) {
             ArrayList<String> tmpLog = FileSystem.logToInfo(last32Logs.get(i));
 
-            if(tmpLog.get(0). equals(storeIp)){
-                if(Integer.parseInt(tmpLog.get(1))%2 != joinOrLeave){
-                    String newLog = tmpLog.get(0) + " " + String.valueOf(Integer.parseInt(tmpLog.get(1))+1);
+            if (tmpLog.get(0).equals(storeIp)) {
+                if (Integer.parseInt(tmpLog.get(1)) % 2 != joinOrLeave) {
+                    String newLog = tmpLog.get(0) + " " + String.valueOf(Integer.parseInt(tmpLog.get(1)) + 1);
                     addLog(newLog);
                 }
 
@@ -276,7 +280,7 @@ public class Store {
         }
 
         //Case of joining the cluster of the first time
-        if(joinOrLeave == 0){
+        if (joinOrLeave == 0) {
             addLog(storeIp + " " + Store.STARTING_MEMBERSHIP_COUNTER);
         }
 
@@ -583,7 +587,7 @@ public class Store {
         ArrayList<String> files = new ArrayList<>();
         File folder = new File(this.folderLocation);
         for (File file : Objects.requireNonNull(folder.listFiles())) {
-            if (file.getName().endsWith(".deleted")) continue;
+            if (file.getName().endsWith(".deleted") || file.getName().equals("membership_log.txt")) continue;
             files.add(file.getName());
         }
         return files;
@@ -609,7 +613,7 @@ public class Store {
         // TODO: sort abuse
         List<ArrayList<String>> sortedCluster = sortCluster();
         int index = this.getNodePosition(sortedCluster, ip_hash);
-
+        System.out.println("NODE POS: " + index);
 
         for (int i = 1; i <= 2; ++i) {
             // if (i < 0) i = sortedCluster.size() - 1;
@@ -618,6 +622,8 @@ public class Store {
             ArrayList<String> replica_node = sortedCluster.get(replica_index);
             replicas.add(new Pair<>(replica_node.get(0), this.storePort));
         }
+
+        System.out.println("FOUND REPLICAS: " + replicas);
 
         return replicas.stream().distinct().collect(Collectors.toList());
     }
@@ -695,8 +701,10 @@ public class Store {
 
 
     private ArrayList<String> getPredecessors(String nodeIp) {
-        return getStoreReplicas(nodeIp).stream().
-                map(Pair::getElement0).collect(Collectors.toCollection(ArrayList::new));
+        ArrayList<String> replicas = getStoreReplicas(nodeIp).stream().
+                map(Pair::getElement0).distinct().collect(Collectors.toCollection(ArrayList::new));
+        replicas.remove(nodeIp);
+        return replicas;
     }
 
     private List<String> getSucessors(String storeIp) {
@@ -704,7 +712,6 @@ public class Store {
         ArrayList<String> successors = new ArrayList<>();
 
         if (this.cluster.size() == 1) return successors;
-
 
         String nodeHash = ShaHasher.getHashString(storeIp);
         ArrayList<Pair<String, Integer>> replicas = new ArrayList<>();
@@ -718,7 +725,10 @@ public class Store {
             replicas.add(Pair.createPair(sortedCluster.get(replicaIndex).get(0), this.storePort));
         }
 
-        return replicas.stream().map(Pair::getElement0).distinct().collect(Collectors.toList());
+
+        List<String> filtered = replicas.stream().map(Pair::getElement0).distinct().collect(Collectors.toList());
+        filtered.remove(storeIp);
+        return filtered;
     }
 
     private List<String> getPreferenceList(String filekey) {
@@ -733,38 +743,91 @@ public class Store {
         return preference_list;
     }
 
-    public String membershipJoinHandler(String newStoreIp) {
-        // Join node to the cluster - DONE
-        String nodeHash = ShaHasher.getHashString(newStoreIp);
+    private List<String> getFilesThatIOwn() {
+        List<String> storedFiles = this.getNonDeletedFiles();
+        List<String> myFiles = new ArrayList<>();
 
-        // Get 2 predecessors
-        List<String> predecessorsIps = this.getPredecessors(newStoreIp);
-        // Get 2 successors
-        List<String> sucessorsIps = this.getSucessors(newStoreIp);
-
-        if (!predecessorsIps.contains(this.storeIp) && !sucessorsIps.contains(this.storeIp))
-            return MessageCodes.UPDATED_WITH_JOIN; // If I'm not in it exit
-
-        ArrayList<String> files = getNonDeletedFiles();
-
-        for (String filekey : files) {
-            List<String> preferenceListIps = this.getPreferenceList(filekey); // get the list of stores in charge
-
-            String value = this.searchDirectory(filekey);
-            Message message = new Message(MessageType.PUT.toString(), false,
-                    newStoreIp, this.storePort, filekey + "\n" + value);
-            if (!preferenceListIps.contains(this.storeIp)) { // No longer in charge of the file
-                deleteFile(filekey); // delete the file from the directory
-                if (sucessorsIps.get(0).equals(this.storeIp)) // if I'm the first successor send the file to new node
-                    sendPutRequest(message, Pair.createPair(sucessorsIps.get(0), this.storePort));
-                continue;
-            }
-            // I'm still responsible, but new is too, send it to new
-            sendPutRequest(message, Pair.createPair(sucessorsIps.get(1), this.storePort));
+        for (String file : storedFiles) {
+            Pair<String, Integer> nearestNodeForKey = this.getNearestNodeForKey(file);
+            if (nearestNodeForKey.getElement0().equals(this.storeIp)) myFiles.add(file);
         }
+        return myFiles;
+    }
+
+
+    private String  purgeFiles() {
+        // for each non deleted file, check if my storeIp is in the preference list
+        List<String> myFiles = this.getNonDeletedFiles();
+        for (String file : myFiles) {
+            List<String> preferenceList = this.getPreferenceList(file);
+            if (!preferenceList.contains(this.storeIp)) this.deleteFile(file);
+        }
+
+        return MessageCodes.DELETE_SUCCESS;
+    }
+
+
+    public String updateAndBroadCastClusterInfo(String newStoreIp){
+        // update cluster
+        //Add store to cluster
+        this.updateStoreToCluster(newStoreIp, Store.UPDATE_CLUSTER_JOIN);
+
+        //Compose body (List of clusterMembers and last32logs)
+        String body = this.convertMembershipToString(false);
+
+        // SEND INFO THE NODE THAT MADE THE MULTICAST REQUEST THROUGH TCP
+        Message send = new Message("membership", false, this.getStoreIp(), this.storePort, body );
+
+        try {
+            Socket socket = new Socket(newStoreIp, this.storePort);
+            SocketsIo.sendStringToSocket( send.toString(), socket );
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+            return MessageCodes.UPDATE_CLUSTER_FAIL;
+        }
+
+        return MessageCodes.UPDATE_CLUSTER_SUCCESS;
+    }
+
+
+    public String membershipJoinHandler(String newStoreIp) {
+        // get files for which I'm the owner before the join entry
+        List<String> files = this.getFilesThatIOwn();
+
+        if(this.updateAndBroadCastClusterInfo(newStoreIp).equals(MessageCodes.UPDATE_CLUSTER_FAIL))
+            return MessageCodes.UPDATE_CLUSTER_FAIL;;
+
+        // get successors
+        List<String> successors = this.getSucessors(newStoreIp);
+        System.out.println("Successors: " + successors);
+
+        // get predecessors
+        List<String> predecessors = this.getPredecessors(newStoreIp);
+        System.out.println("Predecessors: " + predecessors);
+
+        // If I am not successor and not a predecessor, leave
+        if (!successors.contains(this.storeIp) && !predecessors.contains(this.storeIp))
+            return MessageCodes.UPDATED_WITH_JOIN;
+
+        // If I am successor send files I own/owned
+        if (successors.contains(this.storeIp)) {
+            for (String file : files) {
+                String value = this.searchDirectory(file);
+                Message message = new Message(MessageType.PUT.toString(), false,
+                        this.storeIp, this.storePort, file + "\n" + value);
+
+                System.out.println("Sending file: " + file + " to new node: " + newStoreIp);
+                sendPutRequest(message, Pair.createPair(newStoreIp, this.storePort));
+            }
+        }
+
+        // clear files that I don't own anymore
+        this.purgeFiles();
 
         return MessageCodes.UPDATED_WITH_JOIN;
     }
+
 
     /**
      * Stores enters the cluster
@@ -781,7 +844,7 @@ public class Store {
     /**
      * Starts the multicast udp cluster server
      */
-    public void startUdpServer(){
+    public void startUdpServer() {
         this.udpClusterServer = new Thread(new StoreUdpServer(this, clusterIp, clusterPort));
 
         udpClusterServer.start();
@@ -814,7 +877,7 @@ public class Store {
      * This store is trying to leave the cluster.
      * It removes itself from the cluster, sends the leave message and closes Udp server
      */
-    public void leave(){
+    public void leave() {
         this.updateStoreToCluster(this.storeIp, Store.UPDATE_CLUSTER_LEAVE);
         this.stopSendingPeriodicMembership();
 
@@ -828,12 +891,6 @@ public class Store {
             closeUdpServer();
 
 
-        } catch (UnknownHostException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        } catch (SocketException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
         } catch (IOException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
@@ -869,8 +926,6 @@ public class Store {
             this.periodicMembershipSender = new ScheduledThreadPoolExecutor(1);
             periodicMembershipSender.scheduleAtFixedRate(() -> sendPeriodicMembership(), 0, 60, TimeUnit.SECONDS);
         }
-
-
     }
 
     /**
@@ -896,9 +951,9 @@ public class Store {
 
         Store store = new Store(storeIp, storePort, clusterIp, clusterPort);
 
-        while (true) {}
+        while (true) {
+        }
     }
-
 
 
     /*
@@ -915,21 +970,21 @@ public class Store {
 
 
     */
-    public String convertMembershipToString(boolean withClusterList){
+    public String convertMembershipToString(boolean withClusterList) {
         String body = "";
 
-        if(withClusterList){
+        if (withClusterList) {
             body += "List:\n";
 
-            for(ArrayList<String> list: this.cluster){
-                body += list.get(0) + " " + list.get(1) +"\n";
+            for (ArrayList<String> list : this.cluster) {
+                body += list.get(0) + " " + list.get(1) + "\n";
             }
 
         }
 
         body += "Logs:\n";
 
-        for(Object log : this.last32Logs.toArray()){
+        for (Object log : this.last32Logs.toArray()) {
             body += log.toString() + "\n";
 
         }

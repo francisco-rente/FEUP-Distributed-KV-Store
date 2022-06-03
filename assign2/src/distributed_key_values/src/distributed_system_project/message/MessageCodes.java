@@ -17,6 +17,9 @@ public abstract class MessageCodes {
     public static final String ERROR_SAVING_FILE = "Error saving file";
     public static final String UPDATED_WITH_JOIN = "New node joined";
     public static final String ERROR_READING_FILE = "Error reading file";
+    public static final String JOIN_ERROR = "Error joining cluster";
+    public static final String UPDATE_CLUSTER_SUCCESS = "UPDATED CLUSTER";
+    public static final String UPDATE_CLUSTER_FAIL = "FAILED TO UPDATE CLUSTER";
 
     MessageCodes() {
     }

@@ -108,26 +108,7 @@ public class MessageHandler implements Runnable {
             store.join();
 
         }else{
-            
-            //Add store to cluster
-            this.store.updateStoreToCluster(message.getIp(), Store.UPDATE_CLUSTER_JOIN);
-
-            //Compose body (List of clusterMembers and last32logs)
-            String body = this.store.convertMembershipToString(false);
-            
-            
-            //TODO create message and send it
-            Message send = new Message("membership", false, this.store.getStoreIp(), message.getPort(), body );
-            
-            try {
-                Socket socket = new Socket(this.message.getIp(), message.getPort());
-                SocketsIo.sendStringToSocket( send.toString(), socket );
-            } catch (IOException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            }
-            
-            
+            this.store.membershipJoinHandler(message.getIp());
         }
 
     }
@@ -163,7 +144,7 @@ public class MessageHandler implements Runnable {
         if(message.isTestClient()){
 
 
-            Integer counter = Math.abs(this.store.getMembershipCounter());
+            int counter = Math.abs(this.store.getMembershipCounter());
 
             if(counter == 1){
                 SocketsIo.sendStringToSocket("Already on out of cluster\nend", socket);
