@@ -192,7 +192,7 @@ public class MessageHandler implements Runnable {
             try {
                 // read all lines of the message until EOF
                 String messageString =  SocketsIo.readFromSocket(this.socket);
-                System.out.println("RECEIVED MESSAGE: " + messageString + "\n");
+                // System.out.println("RECEIVED MESSAGE: " + messageString + "\n");
 
                 //assert messageString != null;
                 this.message = Message.toObject(messageString);

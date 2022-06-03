@@ -614,6 +614,7 @@ public class Store {
         for (int i = 1; i <= 2; ++i) {
             // if (i < 0) i = sortedCluster.size() - 1;
             int replica_index = (index - i) % sortedCluster.size();
+            if (replica_index < 0) replica_index += sortedCluster.size();
             ArrayList<String> replica_node = sortedCluster.get(replica_index);
             replicas.add(new Pair<>(replica_node.get(0), this.storePort));
         }
