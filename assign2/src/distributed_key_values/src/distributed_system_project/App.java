@@ -83,10 +83,10 @@ public class App {
 
 
         // wait for response
-        /*System.out.println("Waiting for response");
+        System.out.println("Waiting for response");
         String response = SocketsIo.readFromSocket(socket);
         System.out.println("Response: " + response);
-        socket.close();*/
+        socket.close();
     }
 }
 

@@ -97,7 +97,6 @@ public class MessageHandler implements Runnable {
     }
 
 
-
     public void handleJoinOperation(Message message) {
         //Create socket to send message
         if(message.isTestClient()){
@@ -106,6 +105,7 @@ public class MessageHandler implements Runnable {
                 return;
             }
             store.join();
+            SocketsIo.sendStringToSocket("Entering cluster\nend", socket);
 
         }else{
             this.store.membershipJoinHandler(message.getIp());
@@ -128,7 +128,6 @@ public class MessageHandler implements Runnable {
             storeInfo.add(storeStringInfo[1]);
             
             members.add(storeInfo);
-
         }
 
         for(String log: membership.getElement1()){
@@ -139,24 +138,22 @@ public class MessageHandler implements Runnable {
 
     }
 
-
     public void handleLeaveOperation(Message message) {
         if(message.isTestClient()){
 
 
-            int counter = Math.abs(this.store.getMembershipCounter());
+            Integer counter = Math.abs(this.store.getMembershipCounter());
 
             if(counter == 1){
                 SocketsIo.sendStringToSocket("Already on out of cluster\nend", socket);
                 return;
             }
-
+            SocketsIo.sendStringToSocket("Left the cluster\nend", socket);
             this.store.leave();
             //Prepares the leave operation and send leave message
         }
         else{
             //Receives leave message from leaver
-
             //Atualizar logs e cluster
             this.store.updateStoreToCluster(message.getIp(), Store.UPDATE_CLUSTER_LEAVE);            
 

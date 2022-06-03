@@ -39,7 +39,7 @@ public class Store {
 
     private static final String STARTING_MEMBERSHIP_COUNTER = "0";
     private static final int MEMBERSHIP_PORT = 7777;
-    private static final int TIMEOUT_TIME = 10000;
+    private static final int TIMEOUT_TIME = 5000;
 
     private final String folderLocation;
 
@@ -890,6 +890,16 @@ public class Store {
             SocketsIo.sendUdpMessage(newMessage, udpSocket, ip_adressCluster, this.clusterPort);
             closeUdpServer();
 
+            //Percorrer as suas keys
+            ArrayList<String> keys = getNonDeletedFiles();
+
+            for(String key: keys){
+                String fileContent = searchDirectory(key);
+                this.put(key, fileContent, true);
+                this.deleteFile(key);
+
+            }
+
 
         } catch (IOException e) {
             // TODO Auto-generated catch block
@@ -924,7 +934,7 @@ public class Store {
     public void startSendingPeriodicMembership() {
         if (this.periodicMembershipSender == null) {
             this.periodicMembershipSender = new ScheduledThreadPoolExecutor(1);
-            periodicMembershipSender.scheduleAtFixedRate(() -> sendPeriodicMembership(), 0, 60, TimeUnit.SECONDS);
+            periodicMembershipSender.scheduleAtFixedRate(() -> sendPeriodicMembership(), 0, 15, TimeUnit.SECONDS);
         }
     }
 
