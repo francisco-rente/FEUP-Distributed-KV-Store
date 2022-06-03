@@ -67,7 +67,6 @@ public class Store {
     private StoreTcpServer tcpConnectionServer;
 
 
-
     public Store(String storeIp, Integer storePort, String clusterIp, Integer clusterPort) {
         this.storeIp = storeIp;
         this.storePort = storePort;
@@ -138,9 +137,10 @@ public class Store {
     /**
      * Creates the cluster array from the last32Logs
      */
-    private void createClusterFromLogs(){
+    private void createClusterFromLogs() {
 
-        for(String log: this.last32Logs){
+        this.cluster.clear();
+        for (String log : this.last32Logs) {
             String[] node = log.split(" ");
             ArrayList<String> nodeInfo = new ArrayList<String>();
             nodeInfo.add(node[0]);
@@ -379,6 +379,9 @@ public class Store {
         Pair<String, Integer> nearest_node = this.getNearestNodeForKey(filekey);
         List<Pair<String, Integer>> replicas = this.getStoreReplicas(nearest_node.getElement0());
 
+
+        System.out.println("REPLICAS: " + replicas.stream().map(Pair::getElement0).collect(Collectors.toList()));
+
         boolean success = true;
 
         // If I'm a replica of the store that owns the file or the owner, delete it
@@ -389,7 +392,7 @@ public class Store {
             // TRY AGAIN IF FAILURE?
 
             String saveStatus = saveFile(filekey, value);
-            if(saveStatus.equals(MessageCodes.ERROR_SAVING_FILE)) success = false;
+            if (saveStatus.equals(MessageCodes.ERROR_SAVING_FILE)) success = false;
             // if(saveStatus.equals(MessageCodes.FILE_EXISTS)) return MessageCodes.FILE_EXISTS;
             if (!isTestClient) return MessageCodes.PUT_SUCCESS;
         }
@@ -556,9 +559,17 @@ public class Store {
 
     private String saveFile(String filekey, String value) {
         try {
-            boolean file_exists = new File(this.folderLocation + "/" + filekey).exists();
-            if (file_exists) return MessageCodes.FILE_EXISTS;
-            Files.write(Paths.get(this.folderLocation + "/" + filekey), value.getBytes(), StandardOpenOption.CREATE);
+            boolean fileExists = new File(this.folderLocation + "/" + filekey).exists();
+            if (fileExists) return MessageCodes.FILE_EXISTS;
+
+            boolean wasDeleted = new File(this.folderLocation + "/" + filekey + ".deleted").exists();
+            if (wasDeleted) {
+                if (!(new File(this.folderLocation + "/" + filekey + ".deleted").
+                        renameTo(new File(this.folderLocation + "/" + filekey))))
+                    return MessageCodes.DELETE_FAIL;
+            } else Files.write(Paths.get(this.folderLocation + "/" + filekey),
+                    value.getBytes(), StandardOpenOption.CREATE);
+
             return MessageCodes.PUT_SUCCESS;
         } catch (IOException e) {
             e.printStackTrace();
@@ -600,11 +611,11 @@ public class Store {
         int index = this.getNodePosition(sortedCluster, ip_hash);
 
 
-        for (int i = 1; i >= 0; i--) {
+        for (int i = 1; i <= 2; ++i) {
             // if (i < 0) i = sortedCluster.size() - 1;
-            int replica_index = (index + i) % sortedCluster.size();
+            int replica_index = (index - i) % sortedCluster.size();
             ArrayList<String> replica_node = sortedCluster.get(replica_index);
-            replicas.add(new Pair<>(sortedCluster.get(i).get(0), this.storePort));
+            replicas.add(new Pair<>(replica_node.get(0), this.storePort));
         }
 
         return replicas.stream().distinct().collect(Collectors.toList());
@@ -832,10 +843,10 @@ public class Store {
     /**
      * This fucntion sends an Udp Message with membership
      */
-    public void sendPeriodicMembership(){
+    public void sendPeriodicMembership() {
         String body = this.convertMembershipToString(false);
 
-        Message send = new Message("membership", false, this.storeIp,this.storePort ,body );
+        Message send = new Message("membership", false, this.storeIp, this.storePort, body);
 
         try {
             DatagramSocket udpSocket = new DatagramSocket();
@@ -852,8 +863,8 @@ public class Store {
     /**
      * Starts sending periodic Membership messages
      */
-    public void startSendingPeriodicMembership(){
-        if(this.periodicMembershipSender == null){
+    public void startSendingPeriodicMembership() {
+        if (this.periodicMembershipSender == null) {
             this.periodicMembershipSender = new ScheduledThreadPoolExecutor(1);
             periodicMembershipSender.scheduleAtFixedRate(() -> sendPeriodicMembership(), 0, 60, TimeUnit.SECONDS);
         }
@@ -864,7 +875,7 @@ public class Store {
     /**
      * Stops sending periodic Membership messages
      */
-    public void stopSendingPeriodicMembership(){
+    public void stopSendingPeriodicMembership() {
         this.periodicMembershipSender.shutdown();
         this.periodicMembershipSender = null;
     }

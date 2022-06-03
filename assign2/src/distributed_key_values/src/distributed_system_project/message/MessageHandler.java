@@ -102,7 +102,7 @@ public class MessageHandler implements Runnable {
         //Create socket to send message
         if(message.isTestClient()){
             if(this.store.getMembershipCounter() %2 == 0){
-                SocketsIo.sendStringToSocket("Already on cluster", socket);
+                SocketsIo.sendStringToSocket("Already on cluster\nend", socket);
                 return;
             }
             store.join();
@@ -162,8 +162,11 @@ public class MessageHandler implements Runnable {
     public void handleLeaveOperation(Message message) {
         if(message.isTestClient()){
 
-            if(this.store.getMembershipCounter() %2 == 1){
-                SocketsIo.sendStringToSocket("Already on out of cluster", socket);
+
+            Integer counter = Math.abs(this.store.getMembershipCounter());
+
+            if(counter == 1){
+                SocketsIo.sendStringToSocket("Already on out of cluster\nend", socket);
                 return;
             }
 
@@ -196,7 +199,6 @@ public class MessageHandler implements Runnable {
 
                 MessageType type = MessageType.getMessageType(message);
 
-                System.out.println("HANDLING OPERATION : " + message.getOperation() + "\n");
 
                 // TODO discover header type
                 switch (type) {
@@ -226,7 +228,7 @@ public class MessageHandler implements Runnable {
                 e.printStackTrace();
             }
         } else{
-            MessageType type = MessageType.getMessageType(message, this.store);
+            MessageType type = MessageType.getMessageType(message);
 
             System.out.println("HANDLING OPERATION : " + message.getOperation() + "\n");
 
